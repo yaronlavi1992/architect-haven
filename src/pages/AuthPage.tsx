@@ -30,17 +30,29 @@ export default function AuthPage() {
     
     try {
       await signIn("password", formData);
-    } catch (error: any) {
-      let toastTitle = "";
-      if (error.message.includes("Invalid password")) {
-        toastTitle = "Invalid password. Please try again.";
+      toast.success(flow === "signIn" ? "Signed in!" : "Account created!");
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : "Authentication failed";
+      if (msg.includes("Invalid password")) {
+        toast.error("Invalid password. Please try again.");
+      } else if (msg.includes("sign up") || msg.includes("sign in")) {
+        toast.error(flow === "signIn" ? "Could not sign in, did you mean to sign up?" : "Could not sign up, did you mean to sign in?");
       } else {
-        toastTitle =
-          flow === "signIn"
-            ? "Could not sign in, did you mean to sign up?"
-            : "Could not sign up, did you mean to sign in?";
+        toast.error(msg);
       }
-      toast.error(toastTitle);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleAnonymous = async () => {
+    setSubmitting(true);
+    try {
+      await signIn("anonymous");
+      toast.success("Signed in!");
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : "Anonymous sign-in failed";
+      toast.error(msg);
     } finally {
       setSubmitting(false);
     }
@@ -112,8 +124,9 @@ export default function AuthPage() {
           </div>
 
           <button
-            onClick={() => void signIn("anonymous")}
-            className="w-full bg-gray-500 hover:bg-gray-600 text-white font-semibold py-3 rounded-md transition-colors"
+            onClick={handleAnonymous}
+            disabled={submitting}
+            className="w-full bg-gray-500 hover:bg-gray-600 disabled:opacity-50 text-white font-semibold py-3 rounded-md transition-colors"
           >
             Sign in anonymously
           </button>
