@@ -5,6 +5,7 @@ import "./index.css";
 import App from "./App";
 import { ErrorBoundary } from "./ErrorBoundary";
 
+// test comment
 const url = import.meta.env.VITE_CONVEX_URL;
 if (!url) throw new Error("VITE_CONVEX_URL is required");
 
