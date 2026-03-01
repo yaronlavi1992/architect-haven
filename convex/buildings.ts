@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { query, mutation } from "./_generated/server";
+import type { Id } from "./_generated/dataModel";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { FREE_LIMIT } from "./plans";
 
@@ -176,6 +177,71 @@ export const getDocuments = query({
         url: await ctx.storage.getUrl(doc.storageId),
       }))
     );
+  },
+});
+
+function hasAttachments(building: { sections: Array<{ apartments: Array<{ documents: unknown[] }> }> }): boolean {
+  return building.sections.some((s) =>
+    s.apartments.some((a) => a.documents && a.documents.length > 0)
+  );
+}
+
+export const getByShareToken = query({
+  args: { shareToken: v.string() },
+  handler: async (ctx, args) => {
+    const building = await ctx.db
+      .query("buildings")
+      .withIndex("by_share_token", (q) => q.eq("shareToken", args.shareToken))
+      .unique();
+    if (!building || !building.shareToken) return null;
+
+    const sections = await Promise.all(
+      building.sections.map(async (section) => ({
+        ...section,
+        apartments: await Promise.all(
+          section.apartments.map(async (apt) => ({
+            ...apt,
+            documents: await Promise.all(
+              (apt.documents || []).map(async (doc) => {
+                const storageId = doc.storageId as Id<"_storage"> | undefined;
+                const url = storageId ? await ctx.storage.getUrl(storageId) : doc.signedUrl;
+                return { ...doc, signedUrl: url ?? doc.signedUrl };
+              })
+            ),
+          }))
+        ),
+      }))
+    );
+    return { ...building, sections };
+  },
+});
+
+export const generateShareLink = mutation({
+  args: { id: v.id("buildings") },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+
+    const building = await ctx.db.get(args.id);
+    if (!building || building.userId !== userId) throw new Error("Building not found");
+    if (!hasAttachments(building)) throw new Error("Building has no attachments; add documents to apartments first.");
+
+    const shareToken = crypto.randomUUID();
+    await ctx.db.patch(args.id, { shareToken });
+    return shareToken;
+  },
+});
+
+export const revokeShareLink = mutation({
+  args: { id: v.id("buildings") },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+
+    const building = await ctx.db.get(args.id);
+    if (!building || building.userId !== userId) throw new Error("Building not found");
+
+    await ctx.db.patch(args.id, { shareToken: undefined });
   },
 });
 

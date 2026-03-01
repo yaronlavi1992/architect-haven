@@ -23,7 +23,8 @@ const applicationTables = {
       })),
     })),
     userId: v.id("users"),
-  }).index("by_user", ["userId"]),
+    shareToken: v.optional(v.string()),
+  }).index("by_user", ["userId"]).index("by_share_token", ["shareToken"]),
 
   documents: defineTable({
     name: v.string(),

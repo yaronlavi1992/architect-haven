@@ -17,6 +17,8 @@ export default function BuildingDetail() {
   const building = useQuery(api.buildings.get, id ? { id: id as any } : "skip");
   const documents = useQuery(api.buildings.getDocuments, id ? { buildingId: id as any } : "skip");
   const updateBuilding = useMutation(api.buildings.update);
+  const generateShareLink = useMutation(api.buildings.generateShareLink);
+  const revokeShareLink = useMutation(api.buildings.revokeShareLink);
   
   const [showEditForm, setShowEditForm] = useState(false);
   const [selectedApartments, setSelectedApartments] = useState<Set<string>>(new Set());
@@ -190,6 +192,38 @@ export default function BuildingDetail() {
     }
   }, [buildingData, updateBuilding]);
 
+  const hasAttachments = building?.sections?.some((s: any) =>
+    s.apartments?.some((a: any) => a.documents?.length > 0)
+  );
+  const viewOnlyUrl = building?.shareToken
+    ? `${window.location.origin}/view/${building.shareToken}`
+    : null;
+
+  const handleCopyViewOnlyLink = async () => {
+    if (!id || !building) return;
+    try {
+      let token = building.shareToken;
+      if (!token) {
+        token = await generateShareLink({ id: building._id });
+      }
+      const url = `${window.location.origin}/view/${token}`;
+      await navigator.clipboard.writeText(url);
+      toast.success("View-only link copied to clipboard");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Failed to generate link");
+    }
+  };
+
+  const handleRevokeViewOnlyLink = async () => {
+    if (!building?.shareToken) return;
+    try {
+      await revokeShareLink({ id: building._id });
+      toast.success("View-only link revoked");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Failed to revoke");
+    }
+  };
+
   // Calculate total floors for camera positioning
   const totalFloors = building ? building.sections.reduce((total: number, section: any) => {
     return total + (section.endFloor - section.startFloor + 1);
@@ -220,6 +254,28 @@ export default function BuildingDetail() {
       >
         Edit Building
       </button>
+
+      {hasAttachments && (
+        <div className="space-y-2">
+          <button
+            onClick={handleCopyViewOnlyLink}
+            className="w-full bg-green-500 hover:bg-green-600 text-white px-4 py-3 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+            </svg>
+            {viewOnlyUrl ? "Copy view-only link" : "Export view-only link"}
+          </button>
+          {viewOnlyUrl && (
+            <button
+              onClick={handleRevokeViewOnlyLink}
+              className="w-full text-sm text-gray-600 hover:text-red-600"
+            >
+              Revoke link
+            </button>
+          )}
+        </div>
+      )}
 
       {selectedApartments.size > 0 && (
         <button

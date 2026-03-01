@@ -6,6 +6,7 @@ import LandingPage from "./pages/LandingPage";
 import Dashboard from "./pages/Dashboard";
 import BuildingsList from "./pages/BuildingsList";
 import BuildingDetail from "./pages/BuildingDetail";
+import ViewOnlyBuilding from "./pages/ViewOnlyBuilding";
 import Settings from "./pages/Settings";
 import AuthPage from "./pages/AuthPage";
 import Sidebar from "./components/Sidebar";
@@ -23,6 +24,7 @@ export default function App() {
           <Route path="/dashboard" element={<ProtectedRoute><DashboardLayoutWithProvider><Dashboard /></DashboardLayoutWithProvider></ProtectedRoute>} />
           <Route path="/buildings" element={<ProtectedRoute><DashboardLayoutWithProvider><BuildingsList /></DashboardLayoutWithProvider></ProtectedRoute>} />
           <Route path="/buildings/:id" element={<ProtectedRoute><DashboardLayoutWithProvider><BuildingDetail /></DashboardLayoutWithProvider></ProtectedRoute>} />
+          <Route path="/view/:shareToken" element={<ViewOnlyBuilding />} />
           <Route path="/settings" element={<ProtectedRoute><DashboardLayoutWithProvider><Settings /></DashboardLayoutWithProvider></ProtectedRoute>} />
           <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

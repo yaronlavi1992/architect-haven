@@ -4,11 +4,14 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { toast } from "sonner";
 import BuildingForm from "../components/BuildingForm";
+import UpgradeModal from "../components/UpgradeModal";
 
 export default function BuildingsList() {
   const buildings = useQuery(api.buildings.list);
+  const plans = useQuery(api.plans.get);
   const deleteBuilding = useMutation(api.buildings.remove);
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
   const titleId = useId();
   const descId = useId();
@@ -47,6 +50,9 @@ export default function BuildingsList() {
     }, 0);
   };
 
+  const freeLimit = plans?.freeLimit ?? 5;
+  const atLimit = Array.isArray(buildings) && buildings.length >= freeLimit;
+
   return (
     <div>
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8">
@@ -59,7 +65,8 @@ export default function BuildingsList() {
           </p>
         </div>
         <button
-          onClick={() => setShowCreateForm(true)}
+          type="button"
+          onClick={() => (atLimit ? setShowUpgradeModal(true) : setShowCreateForm(true))}
           className="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg font-semibold transition-colors mt-4 sm:mt-0 self-center sm:self-auto"
         >
           Create Building
@@ -172,6 +179,12 @@ export default function BuildingsList() {
           </div>
         </div>
       )}
+
+      <UpgradeModal
+        open={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        plans={plans}
+      />
     </div>
   );
 }

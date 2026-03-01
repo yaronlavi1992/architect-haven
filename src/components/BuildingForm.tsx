@@ -151,8 +151,14 @@ export default function BuildingForm({ building, onClose, onSuccess }: BuildingF
       
       onSuccess();
     } catch (error: unknown) {
-      const msg = error instanceof Error ? error.message : "Failed to save building";
-      toast.error(msg);
+      const msg = error instanceof Error ? error.message : String(error);
+      if (msg.includes("Free plan limited") || msg.includes("Upgrade to Pro")) {
+        const match = msg.match(/(\d+)\s+buildings/);
+        const limit = match ? match[1] : "5";
+        toast.error(`Free plan limit reached (${limit} buildings). Upgrade to Pro for unlimited.`);
+      } else {
+        toast.error(msg);
+      }
     } finally {
       setIsSubmitting(false);
     }
