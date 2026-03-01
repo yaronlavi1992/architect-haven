@@ -19,6 +19,8 @@ Chef apps use [Convex Auth](https://auth.convex.dev/) with Anonymous auth for ea
 
 ## Developing and deploying your app
 
+**Vercel (frontend):** Ensure the repo is connected in the [Vercel dashboard](https://vercel.com/dashboard) and the **Production Branch** is set to `master`. See [docs/DEPLOY.md](docs/DEPLOY.md) for details.
+
 Check out the [Convex docs](https://docs.convex.dev/) for more information on how to develop with Convex.
 * If you're new to Convex, the [Overview](https://docs.convex.dev/understanding/) is a good place to start
 * Check out the [Hosting and Deployment](https://docs.convex.dev/production/) docs for how to deploy your app
