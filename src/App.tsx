@@ -1,7 +1,12 @@
 import { ErrorBoundary } from "react-error-boundary";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { Toaster } from "sonner";
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
 import LandingPage from "./pages/LandingPage";
 import Dashboard from "./pages/Dashboard";
 import BuildingsList from "./pages/BuildingsList";
@@ -19,14 +24,50 @@ export default function App() {
       <div className="min-h-screen bg-gray-50">
         <ErrorBoundary FallbackComponent={ErrorFallback}>
           <Routes>
-          <Route path="/" element={<LandingPage />} />
-          <Route path="/auth" element={<AuthPage />} />
-          <Route path="/dashboard" element={<ProtectedRoute><DashboardLayoutWithProvider><Dashboard /></DashboardLayoutWithProvider></ProtectedRoute>} />
-          <Route path="/buildings" element={<ProtectedRoute><DashboardLayoutWithProvider><BuildingsList /></DashboardLayoutWithProvider></ProtectedRoute>} />
-          <Route path="/buildings/:id" element={<ProtectedRoute><DashboardLayoutWithProvider><BuildingDetail /></DashboardLayoutWithProvider></ProtectedRoute>} />
-          <Route path="/view/:shareToken" element={<ViewOnlyBuilding />} />
-          <Route path="/settings" element={<ProtectedRoute><DashboardLayoutWithProvider><Settings /></DashboardLayoutWithProvider></ProtectedRoute>} />
-          <Route path="*" element={<Navigate to="/" replace />} />
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/auth" element={<AuthPage />} />
+            <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute>
+                  <DashboardLayoutWithProvider>
+                    <Dashboard />
+                  </DashboardLayoutWithProvider>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/buildings"
+              element={
+                <ProtectedRoute>
+                  <DashboardLayoutWithProvider>
+                    <BuildingsList />
+                  </DashboardLayoutWithProvider>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/buildings/:id"
+              element={
+                <ProtectedRoute>
+                  <DashboardLayoutWithProvider>
+                    <BuildingDetail />
+                  </DashboardLayoutWithProvider>
+                </ProtectedRoute>
+              }
+            />
+            <Route path="/view/:shareToken" element={<ViewOnlyBuilding />} />
+            <Route
+              path="/settings"
+              element={
+                <ProtectedRoute>
+                  <DashboardLayoutWithProvider>
+                    <Settings />
+                  </DashboardLayoutWithProvider>
+                </ProtectedRoute>
+              }
+            />
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </ErrorBoundary>
         <Toaster />
@@ -51,7 +92,11 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
   );
 }
 
-function DashboardLayoutWithProvider({ children }: { children: React.ReactNode }) {
+function DashboardLayoutWithProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <SidebarProvider>
       <DashboardLayout>{children}</DashboardLayout>

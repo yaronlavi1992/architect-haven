@@ -56,7 +56,7 @@ Add env var in Vercel dashboard: `VITE_CONVEX_URL` = `https://keen-wolf-134.conv
 Then set Convex prod HOSTING_URL:
 
 ```bash
-echo 'https://your-app.vercel.app' | npx convex env set HOSTING_URL --prod
+echo 'https://architecthaven-3dbuildingmodelingap.vercel.app' | npx convex env set HOSTING_URL --prod
 ```
 
 ---

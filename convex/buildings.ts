@@ -39,23 +39,29 @@ export const get = query({
 export const create = mutation({
   args: {
     name: v.string(),
-    sections: v.array(v.object({
-      startFloor: v.number(),
-      endFloor: v.number(),
-      apartmentsCount: v.number(),
-      description: v.string(),
-      apartments: v.array(v.object({
-        apartmentIndex: v.number(),
-        isSelected: v.boolean(),
-        type: v.string(),
-        documents: v.array(v.object({
-          name: v.string(),
-          color: v.optional(v.string()),
-          signedUrl: v.optional(v.string()),
-          storageId: v.optional(v.id("_storage")),
-        })),
-      })),
-    })),
+    sections: v.array(
+      v.object({
+        startFloor: v.number(),
+        endFloor: v.number(),
+        apartmentsCount: v.number(),
+        description: v.string(),
+        apartments: v.array(
+          v.object({
+            apartmentIndex: v.number(),
+            isSelected: v.boolean(),
+            type: v.string(),
+            documents: v.array(
+              v.object({
+                name: v.string(),
+                color: v.optional(v.string()),
+                signedUrl: v.optional(v.string()),
+                storageId: v.optional(v.id("_storage")),
+              }),
+            ),
+          }),
+        ),
+      }),
+    ),
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
@@ -77,7 +83,7 @@ export const create = mutation({
         .collect();
       if (count.length >= FREE_LIMIT) {
         throw new Error(
-          `Free plan limited to ${FREE_LIMIT} buildings. Upgrade to Pro for unlimited.`
+          `Free plan limited to ${FREE_LIMIT} buildings. Upgrade to Pro for unlimited.`,
         );
       }
     }
@@ -94,23 +100,29 @@ export const update = mutation({
   args: {
     id: v.id("buildings"),
     name: v.string(),
-    sections: v.array(v.object({
-      startFloor: v.number(),
-      endFloor: v.number(),
-      apartmentsCount: v.number(),
-      description: v.string(),
-      apartments: v.array(v.object({
-        apartmentIndex: v.number(),
-        isSelected: v.boolean(),
-        type: v.string(),
-        documents: v.array(v.object({
-          name: v.string(),
-          color: v.optional(v.string()),
-          signedUrl: v.optional(v.string()),
-          storageId: v.optional(v.id("_storage")),
-        })),
-      })),
-    })),
+    sections: v.array(
+      v.object({
+        startFloor: v.number(),
+        endFloor: v.number(),
+        apartmentsCount: v.number(),
+        description: v.string(),
+        apartments: v.array(
+          v.object({
+            apartmentIndex: v.number(),
+            isSelected: v.boolean(),
+            type: v.string(),
+            documents: v.array(
+              v.object({
+                name: v.string(),
+                color: v.optional(v.string()),
+                signedUrl: v.optional(v.string()),
+                storageId: v.optional(v.id("_storage")),
+              }),
+            ),
+          }),
+        ),
+      }),
+    ),
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
@@ -175,15 +187,23 @@ export const getDocuments = query({
       documents.map(async (doc) => ({
         ...doc,
         url: await ctx.storage.getUrl(doc.storageId),
-      }))
+      })),
     );
   },
 });
 
-function hasAttachments(building: { sections: Array<{ apartments: Array<{ documents: unknown[] }> }> }): boolean {
-  return building.sections.some((s) =>
-    s.apartments.some((a) => a.documents && a.documents.length > 0)
-  );
+function hasAttachments(building: {
+  sections?: Array<{ apartments?: Array<{ documents?: unknown[] }> }>;
+}): boolean {
+  const sections = building?.sections;
+  if (!Array.isArray(sections)) return false;
+  return sections.some((s) => {
+    const apartments = s?.apartments;
+    if (!Array.isArray(apartments)) return false;
+    return apartments.some(
+      (a) => Array.isArray(a?.documents) && a.documents.length > 0,
+    );
+  });
 }
 
 export const getByShareToken = query({
@@ -204,13 +224,15 @@ export const getByShareToken = query({
             documents: await Promise.all(
               (apt.documents || []).map(async (doc) => {
                 const storageId = doc.storageId as Id<"_storage"> | undefined;
-                const url = storageId ? await ctx.storage.getUrl(storageId) : doc.signedUrl;
+                const url = storageId
+                  ? await ctx.storage.getUrl(storageId)
+                  : doc.signedUrl;
                 return { ...doc, signedUrl: url ?? doc.signedUrl };
-              })
+              }),
             ),
-          }))
+          })),
         ),
-      }))
+      })),
     );
     return { ...building, sections };
   },
@@ -223,10 +245,24 @@ export const generateShareLink = mutation({
     if (!userId) throw new Error("Not authenticated");
 
     const building = await ctx.db.get(args.id);
-    if (!building || building.userId !== userId) throw new Error("Building not found");
-    if (!hasAttachments(building)) throw new Error("Building has no attachments; add documents to apartments first.");
+    if (!building || building.userId !== userId)
+      throw new Error("Building not found");
 
-    const shareToken = crypto.randomUUID();
+    const hasInlineAttachments = hasAttachments(building);
+    const buildingLevelDocs = await ctx.db
+      .query("documents")
+      .withIndex("by_building", (q) => q.eq("buildingId", args.id))
+      .first();
+    if (!hasInlineAttachments && !buildingLevelDocs) {
+      throw new Error(
+        "Building has no attachments; add documents to apartments first.",
+      );
+    }
+
+    const shareToken =
+      typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+        ? crypto.randomUUID()
+        : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 15)}`;
     await ctx.db.patch(args.id, { shareToken });
     return shareToken;
   },
@@ -239,7 +275,8 @@ export const revokeShareLink = mutation({
     if (!userId) throw new Error("Not authenticated");
 
     const building = await ctx.db.get(args.id);
-    if (!building || building.userId !== userId) throw new Error("Building not found");
+    if (!building || building.userId !== userId)
+      throw new Error("Building not found");
 
     await ctx.db.patch(args.id, { shareToken: undefined });
   },
@@ -259,9 +296,21 @@ export const addDocument = mutation({
 
     // Generate a random color for the document
     const colors = [
-      "#FF6B6B", "#4ECDC4", "#45B7D1", "#96CEB4", "#FFEAA7", 
-      "#DDA0DD", "#98D8C8", "#F7DC6F", "#85C1E9", "#F8C471",
-      "#82E0AA", "#F1948A", "#BB8FCE", "#85C1E9", "#F9E79F"
+      "#FF6B6B",
+      "#4ECDC4",
+      "#45B7D1",
+      "#96CEB4",
+      "#FFEAA7",
+      "#DDA0DD",
+      "#98D8C8",
+      "#F7DC6F",
+      "#85C1E9",
+      "#F8C471",
+      "#82E0AA",
+      "#F1948A",
+      "#BB8FCE",
+      "#85C1E9",
+      "#F9E79F",
     ];
     const color = colors[Math.floor(Math.random() * colors.length)];
 

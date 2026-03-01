@@ -13,7 +13,11 @@ export const PLANS = {
     name: "Pro Plan",
     buildingLimit: null as number | null,
     priceDisplay: "$20",
-    features: ["Unlimited buildings", "3D visualization", "Document management"],
+    features: [
+      "Unlimited buildings",
+      "3D visualization",
+      "Document management",
+    ],
   },
 } as const;
 

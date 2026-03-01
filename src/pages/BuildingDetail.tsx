@@ -15,13 +15,18 @@ import ErrorFallback from "../components/ErrorFallback";
 export default function BuildingDetail() {
   const { id } = useParams<{ id: string }>();
   const building = useQuery(api.buildings.get, id ? { id: id as any } : "skip");
-  const documents = useQuery(api.buildings.getDocuments, id ? { buildingId: id as any } : "skip");
+  const documents = useQuery(
+    api.buildings.getDocuments,
+    id ? { buildingId: id as any } : "skip",
+  );
   const updateBuilding = useMutation(api.buildings.update);
   const generateShareLink = useMutation(api.buildings.generateShareLink);
   const revokeShareLink = useMutation(api.buildings.revokeShareLink);
-  
+
   const [showEditForm, setShowEditForm] = useState(false);
-  const [selectedApartments, setSelectedApartments] = useState<Set<string>>(new Set());
+  const [selectedApartments, setSelectedApartments] = useState<Set<string>>(
+    new Set(),
+  );
   const [buildingData, setBuildingData] = useState<any>(null);
   const [showMobilePanel, setShowMobilePanel] = useState(false);
 
@@ -51,14 +56,15 @@ export default function BuildingDetail() {
               ...section,
               apartments: section.apartments.map((apt: any, aIdx: number) => ({
                 ...apt,
-                isSelected: aIdx === apartmentIndex ? !apt.isSelected : apt.isSelected,
+                isSelected:
+                  aIdx === apartmentIndex ? !apt.isSelected : apt.isSelected,
               })),
             };
           }),
         };
       });
     },
-    []
+    [],
   );
 
   const handleClearSelection = useCallback(() => {
@@ -75,125 +81,151 @@ export default function BuildingDetail() {
               })),
             })),
           }
-        : prev
+        : prev,
     );
   }, []);
 
-  const handleDocumentAssign = useCallback(async (documentId: string) => {
-    if (!buildingData || selectedApartments.size === 0) return;
+  const handleDocumentAssign = useCallback(
+    async (documentId: string) => {
+      if (!buildingData || selectedApartments.size === 0) return;
 
-    const document = documents?.find(doc => doc._id === documentId);
-    if (!document) return;
+      const document = documents?.find((doc) => doc._id === documentId);
+      if (!document) return;
 
-    const updatedSections = buildingData.sections.map((section: any, sectionIndex: number) => ({
-      ...section,
-      apartments: section.apartments.map((apt: any, apartmentIndex: number) => {
-        // Check all floors for this apartment
-        let shouldUpdate = false;
+      const updatedSections = buildingData.sections.map(
+        (section: any, sectionIndex: number) => ({
+          ...section,
+          apartments: section.apartments.map(
+            (apt: any, apartmentIndex: number) => {
+              // Check all floors for this apartment
+              let shouldUpdate = false;
+              const floorCount = section.endFloor - section.startFloor + 1;
+
+              for (let floorIndex = 0; floorIndex < floorCount; floorIndex++) {
+                const apartmentId = `${sectionIndex}-${floorIndex}-${apartmentIndex}`;
+                if (selectedApartments.has(apartmentId)) {
+                  shouldUpdate = true;
+                  break;
+                }
+              }
+
+              if (shouldUpdate) {
+                return {
+                  ...apt,
+                  documents: [
+                    ...apt.documents,
+                    {
+                      name: document.name,
+                      color: document.color,
+                      signedUrl: document.url,
+                      storageId: document.storageId,
+                    },
+                  ],
+                };
+              }
+              return apt;
+            },
+          ),
+        }),
+      );
+
+      try {
+        await updateBuilding({
+          id: buildingData._id,
+          name: buildingData.name,
+          sections: updatedSections,
+        });
+
+        setBuildingData({
+          ...buildingData,
+          sections: updatedSections,
+        });
+
+        setSelectedApartments(new Set());
+        toast.success("Document assigned to selected apartments");
+      } catch (error) {
+        toast.error("Failed to assign document");
+      }
+    },
+    [buildingData, selectedApartments, documents, updateBuilding],
+  );
+
+  const handleDocumentLegendClick = useCallback(
+    (color: string) => {
+      if (!buildingData) return;
+
+      const newSelected = new Set<string>();
+
+      buildingData.sections.forEach((section: any, sectionIndex: number) => {
         const floorCount = section.endFloor - section.startFloor + 1;
-        
-        for (let floorIndex = 0; floorIndex < floorCount; floorIndex++) {
-          const apartmentId = `${sectionIndex}-${floorIndex}-${apartmentIndex}`;
-          if (selectedApartments.has(apartmentId)) {
-            shouldUpdate = true;
-            break;
+
+        section.apartments.forEach((apt: any, apartmentIndex: number) => {
+          if (apt.documents.length > 0 && apt.documents[0].color === color) {
+            // Select this apartment on all floors
+            for (let floorIndex = 0; floorIndex < floorCount; floorIndex++) {
+              newSelected.add(
+                `${sectionIndex}-${floorIndex}-${apartmentIndex}`,
+              );
+            }
           }
-        }
-        
-        if (shouldUpdate) {
+        });
+      });
+
+      setSelectedApartments(newSelected);
+    },
+    [buildingData],
+  );
+
+  const handleRemoveDocument = useCallback(
+    async (
+      sectionIndex: number,
+      apartmentIndex: number,
+      documentIndex: number,
+    ) => {
+      if (!buildingData) return;
+
+      const updatedSections = buildingData.sections.map(
+        (section: any, sIdx: number) => {
+          if (sIdx !== sectionIndex) return section;
+
           return {
-            ...apt,
-            documents: [...apt.documents, {
-              name: document.name,
-              color: document.color,
-              signedUrl: document.url,
-              storageId: document.storageId,
-            }]
+            ...section,
+            apartments: section.apartments.map((apt: any, aIdx: number) => {
+              if (aIdx !== apartmentIndex) return apt;
+
+              return {
+                ...apt,
+                documents: apt.documents.filter(
+                  (_: any, dIdx: number) => dIdx !== documentIndex,
+                ),
+              };
+            }),
           };
-        }
-        return apt;
-      })
-    }));
+        },
+      );
 
-    try {
-      await updateBuilding({
-        id: buildingData._id,
-        name: buildingData.name,
-        sections: updatedSections,
-      });
-      
-      setBuildingData({
-        ...buildingData,
-        sections: updatedSections
-      });
-      
-      setSelectedApartments(new Set());
-      toast.success("Document assigned to selected apartments");
-    } catch (error) {
-      toast.error("Failed to assign document");
-    }
-  }, [buildingData, selectedApartments, documents, updateBuilding]);
+      try {
+        await updateBuilding({
+          id: buildingData._id,
+          name: buildingData.name,
+          sections: updatedSections,
+        });
 
-  const handleDocumentLegendClick = useCallback((color: string) => {
-    if (!buildingData) return;
+        setBuildingData({
+          ...buildingData,
+          sections: updatedSections,
+        });
 
-    const newSelected = new Set<string>();
-    
-    buildingData.sections.forEach((section: any, sectionIndex: number) => {
-      const floorCount = section.endFloor - section.startFloor + 1;
-      
-      section.apartments.forEach((apt: any, apartmentIndex: number) => {
-        if (apt.documents.length > 0 && apt.documents[0].color === color) {
-          // Select this apartment on all floors
-          for (let floorIndex = 0; floorIndex < floorCount; floorIndex++) {
-            newSelected.add(`${sectionIndex}-${floorIndex}-${apartmentIndex}`);
-          }
-        }
-      });
-    });
-
-    setSelectedApartments(newSelected);
-  }, [buildingData]);
-
-  const handleRemoveDocument = useCallback(async (sectionIndex: number, apartmentIndex: number, documentIndex: number) => {
-    if (!buildingData) return;
-
-    const updatedSections = buildingData.sections.map((section: any, sIdx: number) => {
-      if (sIdx !== sectionIndex) return section;
-      
-      return {
-        ...section,
-        apartments: section.apartments.map((apt: any, aIdx: number) => {
-          if (aIdx !== apartmentIndex) return apt;
-          
-          return {
-            ...apt,
-            documents: apt.documents.filter((_: any, dIdx: number) => dIdx !== documentIndex)
-          };
-        })
-      };
-    });
-
-    try {
-      await updateBuilding({
-        id: buildingData._id,
-        name: buildingData.name,
-        sections: updatedSections,
-      });
-      
-      setBuildingData({
-        ...buildingData,
-        sections: updatedSections
-      });
-      
-      toast.success("Document removed");
-    } catch (error) {
-      toast.error("Failed to remove document");
-    }
-  }, [buildingData, updateBuilding]);
+        toast.success("Document removed");
+      } catch (error) {
+        toast.error("Failed to remove document");
+      }
+    },
+    [buildingData, updateBuilding],
+  );
 
   const hasAttachments = building?.sections?.some((s: any) =>
-    s.apartments?.some((a: any) => a.documents?.length > 0)
+    s.apartments?.some((a: any) => a.documents?.length > 0),
   );
   const viewOnlyUrl = building?.shareToken
     ? `${window.location.origin}/view/${building.shareToken}`
@@ -225,9 +257,11 @@ export default function BuildingDetail() {
   };
 
   // Calculate total floors for camera positioning
-  const totalFloors = building ? building.sections.reduce((total: number, section: any) => {
-    return total + (section.endFloor - section.startFloor + 1);
-  }, 0) : 5;
+  const totalFloors = building
+    ? building.sections.reduce((total: number, section: any) => {
+        return total + (section.endFloor - section.startFloor + 1);
+      }, 0)
+    : 5;
 
   if (building === undefined) {
     return (
@@ -240,8 +274,12 @@ export default function BuildingDetail() {
   if (!building) {
     return (
       <div className="text-center py-12">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Building not found</h2>
-        <p className="text-gray-600">The building you're looking for doesn't exist.</p>
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">
+          Building not found
+        </h2>
+        <p className="text-gray-600">
+          The building you're looking for doesn't exist.
+        </p>
       </div>
     );
   }
@@ -261,8 +299,18 @@ export default function BuildingDetail() {
             onClick={handleCopyViewOnlyLink}
             className="w-full bg-green-500 hover:bg-green-600 text-white px-4 py-3 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
+              />
             </svg>
             {viewOnlyUrl ? "Copy view-only link" : "Export view-only link"}
           </button>
@@ -303,12 +351,13 @@ export default function BuildingDetail() {
     <div className="h-[calc(100vh-4rem)] min-h-0 flex flex-col">
       <div className="flex justify-between items-center mb-6 flex-shrink-0">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+          <h1
+            className="text-3xl font-bold text-gray-900 mb-2"
+            style={{ fontFamily: "Montserrat, sans-serif" }}
+          >
             {building.name}
           </h1>
-          <p className="text-gray-600">
-            Interactive 3D building model
-          </p>
+          <p className="text-gray-600">Interactive 3D building model</p>
         </div>
       </div>
 
@@ -316,10 +365,12 @@ export default function BuildingDetail() {
         <div className="flex-1 relative w-full min-h-0">
           <div className="h-full w-full min-h-0 bg-blue-200 rounded-lg overflow-hidden">
             <ErrorBoundary FallbackComponent={ErrorFallback}>
-              <Canvas camera={{
-                position: [-26, totalFloors * 6, totalFloors * 10],
-                fov: 50,
-              }}>
+              <Canvas
+                camera={{
+                  position: [-26, totalFloors * 6, totalFloors * 10],
+                  fov: 50,
+                }}
+              >
                 <ambientLight intensity={3} color="white" />
                 <pointLight position={[0, 10, 0]} intensity={1} color="white" />
                 <Building3D
@@ -336,9 +387,9 @@ export default function BuildingDetail() {
               </Canvas>
             </ErrorBoundary>
           </div>
-          
-          <FilesLegend 
-            documents={documents || []} 
+
+          <FilesLegend
+            documents={documents || []}
             onDocumentClick={handleDocumentLegendClick}
           />
         </div>
@@ -355,8 +406,18 @@ export default function BuildingDetail() {
           onClick={() => setShowMobilePanel(true)}
           className="md:hidden fixed right-4 top-1/2 transform -translate-y-1/2 bg-amber-500 hover:bg-amber-600 text-white p-4 rounded-full shadow-lg z-10"
         >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4" />
+          <svg
+            className="w-6 h-6"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4"
+            />
           </svg>
         </button>
 
@@ -370,8 +431,18 @@ export default function BuildingDetail() {
                   onClick={() => setShowMobilePanel(false)}
                   className="text-gray-500 hover:text-gray-700"
                 >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  <svg
+                    className="w-6 h-6"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
                   </svg>
                 </button>
               </div>

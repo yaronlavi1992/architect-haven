@@ -7,14 +7,17 @@ interface FilesLegendProps {
   onDocumentClick: (color: string) => void;
 }
 
-export default function FilesLegend({ documents, onDocumentClick }: FilesLegendProps) {
+export default function FilesLegend({
+  documents,
+  onDocumentClick,
+}: FilesLegendProps) {
   if (!documents || documents.length === 0) {
     return null;
   }
 
   // Get unique documents by color to avoid duplicates
   const uniqueDocuments = documents.reduce((acc: any[], doc) => {
-    if (!acc.find(d => d.color === doc.color)) {
+    if (!acc.find((d) => d.color === doc.color)) {
       acc.push(doc);
     }
     return acc;
@@ -35,8 +38,18 @@ export default function FilesLegend({ documents, onDocumentClick }: FilesLegendP
                 className="w-4 h-4 rounded mr-3 border border-gray-300"
                 style={{ backgroundColor: doc.color }}
               ></div>
-              <svg className="w-4 h-4 text-gray-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              <svg
+                className="w-4 h-4 text-gray-500 mr-2"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                />
               </svg>
               <span className="text-sm text-gray-700 truncate">{doc.name}</span>
             </div>

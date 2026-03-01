@@ -5,26 +5,34 @@ import { authTables } from "@convex-dev/auth/server";
 const applicationTables = {
   buildings: defineTable({
     name: v.string(),
-    sections: v.array(v.object({
-      startFloor: v.number(),
-      endFloor: v.number(),
-      apartmentsCount: v.number(),
-      description: v.string(),
-      apartments: v.array(v.object({
-        apartmentIndex: v.number(),
-        isSelected: v.boolean(),
-        type: v.string(),
-        documents: v.array(v.object({
-          name: v.string(),
-          color: v.optional(v.string()),
-          signedUrl: v.optional(v.string()),
-          storageId: v.optional(v.id("_storage")),
-        })),
-      })),
-    })),
+    sections: v.array(
+      v.object({
+        startFloor: v.number(),
+        endFloor: v.number(),
+        apartmentsCount: v.number(),
+        description: v.string(),
+        apartments: v.array(
+          v.object({
+            apartmentIndex: v.number(),
+            isSelected: v.boolean(),
+            type: v.string(),
+            documents: v.array(
+              v.object({
+                name: v.string(),
+                color: v.optional(v.string()),
+                signedUrl: v.optional(v.string()),
+                storageId: v.optional(v.id("_storage")),
+              }),
+            ),
+          }),
+        ),
+      }),
+    ),
     userId: v.id("users"),
     shareToken: v.optional(v.string()),
-  }).index("by_user", ["userId"]).index("by_share_token", ["shareToken"]),
+  })
+    .index("by_user", ["userId"])
+    .index("by_share_token", ["shareToken"]),
 
   documents: defineTable({
     name: v.string(),
@@ -32,7 +40,8 @@ const applicationTables = {
     color: v.string(),
     userId: v.id("users"),
     buildingId: v.id("buildings"),
-  }).index("by_building", ["buildingId"])
+  })
+    .index("by_building", ["buildingId"])
     .index("by_user", ["userId"]),
 
   subscriptions: defineTable({

@@ -21,9 +21,12 @@ export const createCheckoutOrPortal = action({
     if (!userId) throw new Error("Not authenticated");
 
     const identity = await ctx.auth.getUserIdentity();
-    const subscription = await ctx.runQuery(internal.subscriptions.getByUserForAction, {
-      userId,
-    });
+    const subscription = await ctx.runQuery(
+      internal.subscriptions.getByUserForAction,
+      {
+        userId,
+      },
+    );
     if (!subscription) {
       await ctx.runMutation(internal.subscriptions.create, { userId });
     }
@@ -84,14 +87,16 @@ export const fulfillWebhook = internalAction({
       const event = getStripe().webhooks.constructEvent(
         args.payload,
         args.signature,
-        webhookSecret
+        webhookSecret,
       );
       if (event.type === "checkout.session.completed") {
         const session = event.data.object as Stripe.Checkout.Session;
         const subId = session.subscription as string;
         if (!subId) return { success: true };
         const subscription = await getStripe().subscriptions.retrieve(subId);
-        const userId = session.metadata?.userId as import("./_generated/dataModel").Id<"users"> | undefined;
+        const userId = session.metadata?.userId as
+          | import("./_generated/dataModel").Id<"users">
+          | undefined;
         if (!userId) return { success: true };
         await ctx.runMutation(internal.subscriptions.upsertFromCheckout, {
           userId,

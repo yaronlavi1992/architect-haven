@@ -72,7 +72,7 @@ export const updatePeriodEnd = internalMutation({
     const sub = await ctx.db
       .query("subscriptions")
       .withIndex("by_stripe_subscription", (q) =>
-        q.eq("stripeSubscriptionId", args.stripeSubscriptionId)
+        q.eq("stripeSubscriptionId", args.stripeSubscriptionId),
       )
       .unique();
     if (sub) {
@@ -89,7 +89,7 @@ export const cancel = internalMutation({
     const sub = await ctx.db
       .query("subscriptions")
       .withIndex("by_stripe_subscription", (q) =>
-        q.eq("stripeSubscriptionId", args.stripeSubscriptionId)
+        q.eq("stripeSubscriptionId", args.stripeSubscriptionId),
       )
       .unique();
     if (sub) {

@@ -34,10 +34,14 @@ interface BuildingFormProps {
   onSuccess: () => void;
 }
 
-export default function BuildingForm({ building, onClose, onSuccess }: BuildingFormProps) {
+export default function BuildingForm({
+  building,
+  onClose,
+  onSuccess,
+}: BuildingFormProps) {
   const [name, setName] = useState("");
   const [sections, setSections] = useState<FloorGroup[]>([
-    { startFloor: 1, endFloor: 5, apartmentsCount: 8, description: "offices" }
+    { startFloor: 1, endFloor: 5, apartmentsCount: 8, description: "offices" },
   ]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -51,7 +55,14 @@ export default function BuildingForm({ building, onClose, onSuccess }: BuildingF
       setSections(rows);
     } else if (building) {
       setName(building.name);
-      setSections([{ startFloor: 1, endFloor: 1, apartmentsCount: 8, description: "offices" }]);
+      setSections([
+        {
+          startFloor: 1,
+          endFloor: 1,
+          apartmentsCount: 8,
+          description: "offices",
+        },
+      ]);
     }
   }, [building]);
 
@@ -65,8 +76,8 @@ export default function BuildingForm({ building, onClose, onSuccess }: BuildingF
         startFloor: newStartFloor,
         endFloor: isEdit ? newStartFloor : newStartFloor + 1,
         apartmentsCount: 8,
-        description: "offices"
-      }
+        description: "offices",
+      },
     ]);
   };
 
@@ -76,17 +87,25 @@ export default function BuildingForm({ building, onClose, onSuccess }: BuildingF
     setSections(newSections);
   };
 
-  const updateSection = (index: number, field: keyof FloorGroup, value: string | number) => {
+  const updateSection = (
+    index: number,
+    field: keyof FloorGroup,
+    value: string | number,
+  ) => {
     const updated = sections.map((s) => ({ ...s }));
     updated[index] = { ...updated[index], [field]: value };
     if (building && (field === "startFloor" || field === "endFloor")) {
-      const floor = typeof value === "number" ? value : parseInt(String(value), 10) || 1;
+      const floor =
+        typeof value === "number" ? value : parseInt(String(value), 10) || 1;
       updated[index].startFloor = updated[index].endFloor = Math.max(1, floor);
     }
     setSections(updated);
   };
 
-  const generateApartmentsForSection = (section: FloorGroup, existingSection?: any) => {
+  const generateApartmentsForSection = (
+    section: FloorGroup,
+    existingSection?: any,
+  ) => {
     // If editing and existing apartments exist, preserve them
     if (existingSection?.apartments) {
       const base = existingSection.apartments.slice(0, section.apartmentsCount);
@@ -100,7 +119,7 @@ export default function BuildingForm({ building, onClose, onSuccess }: BuildingF
       }
       return base.map((a: any) => ({ ...a, isSelected: false }));
     }
-    
+
     // Generate new apartments
     return Array.from({ length: section.apartmentsCount }, (_, j) => ({
       apartmentIndex: j,
@@ -115,16 +134,20 @@ export default function BuildingForm({ building, onClose, onSuccess }: BuildingF
     if (!name.trim()) return;
 
     setIsSubmitting(true);
-    
+
     try {
       // Expand ranges into individual floors for storage (original logic)
       const expandedSections: any[] = [];
       const existingSections = building?.sections;
 
       sections.forEach((section) => {
-        for (let floor = section.startFloor; floor <= section.endFloor; floor++) {
+        for (
+          let floor = section.startFloor;
+          floor <= section.endFloor;
+          floor++
+        ) {
           const existingSection = existingSections?.find(
-            (s: any) => floor >= s.startFloor && floor <= s.endFloor
+            (s: any) => floor >= s.startFloor && floor <= s.endFloor,
           );
           expandedSections.push({
             startFloor: floor,
@@ -148,14 +171,16 @@ export default function BuildingForm({ building, onClose, onSuccess }: BuildingF
           sections: expandedSections,
         });
       }
-      
+
       onSuccess();
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : String(error);
       if (msg.includes("Free plan limited") || msg.includes("Upgrade to Pro")) {
         const match = msg.match(/(\d+)\s+buildings/);
         const limit = match ? match[1] : "5";
-        toast.error(`Free plan limit reached (${limit} buildings). Upgrade to Pro for unlimited.`);
+        toast.error(
+          `Free plan limit reached (${limit} buildings). Upgrade to Pro for unlimited.`,
+        );
       } else {
         toast.error(msg);
       }
@@ -168,15 +193,28 @@ export default function BuildingForm({ building, onClose, onSuccess }: BuildingF
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
       <div className="bg-white rounded-lg p-4 sm:p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-xl">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-gray-900" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+          <h2
+            className="text-2xl font-bold text-gray-900"
+            style={{ fontFamily: "Montserrat, sans-serif" }}
+          >
             {building ? "Edit Building" : "Create New Building"}
           </h2>
           <button
             onClick={onClose}
             className="text-gray-500 hover:text-gray-700"
           >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            <svg
+              className="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           </button>
         </div>
@@ -198,7 +236,9 @@ export default function BuildingForm({ building, onClose, onSuccess }: BuildingF
 
           <div className="mb-6">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">Floor Sections</h3>
+              <h3 className="text-lg font-semibold text-gray-900">
+                Floor Sections
+              </h3>
               <button
                 type="button"
                 onClick={addSection}
@@ -215,9 +255,15 @@ export default function BuildingForm({ building, onClose, onSuccess }: BuildingF
                     <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">
                       {building ? "Floor" : "Floor Range"}
                     </th>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Apartments</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Description</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Actions</th>
+                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">
+                      Apartments
+                    </th>
+                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">
+                      Description
+                    </th>
+                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">
+                      Actions
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
@@ -228,7 +274,13 @@ export default function BuildingForm({ building, onClose, onSuccess }: BuildingF
                           <input
                             type="number"
                             value={section.startFloor}
-                            onChange={(e) => updateSection(index, "startFloor", parseInt(e.target.value) || 1)}
+                            onChange={(e) =>
+                              updateSection(
+                                index,
+                                "startFloor",
+                                parseInt(e.target.value) || 1,
+                              )
+                            }
                             min={1}
                             className="w-16 px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                           />
@@ -237,7 +289,13 @@ export default function BuildingForm({ building, onClose, onSuccess }: BuildingF
                             <input
                               type="number"
                               value={section.startFloor}
-                              onChange={(e) => updateSection(index, "startFloor", parseInt(e.target.value) || 1)}
+                              onChange={(e) =>
+                                updateSection(
+                                  index,
+                                  "startFloor",
+                                  parseInt(e.target.value) || 1,
+                                )
+                              }
                               min={1}
                               className="w-16 px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                             />
@@ -245,7 +303,13 @@ export default function BuildingForm({ building, onClose, onSuccess }: BuildingF
                             <input
                               type="number"
                               value={section.endFloor}
-                              onChange={(e) => updateSection(index, "endFloor", parseInt(e.target.value) || 1)}
+                              onChange={(e) =>
+                                updateSection(
+                                  index,
+                                  "endFloor",
+                                  parseInt(e.target.value) || 1,
+                                )
+                              }
                               min={section.startFloor}
                               className="w-16 px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                             />
@@ -256,7 +320,13 @@ export default function BuildingForm({ building, onClose, onSuccess }: BuildingF
                         <input
                           type="number"
                           value={section.apartmentsCount}
-                          onChange={(e) => updateSection(index, "apartmentsCount", parseInt(e.target.value) || 1)}
+                          onChange={(e) =>
+                            updateSection(
+                              index,
+                              "apartmentsCount",
+                              parseInt(e.target.value) || 1,
+                            )
+                          }
                           min={1}
                           max={20}
                           className="w-20 px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -266,7 +336,9 @@ export default function BuildingForm({ building, onClose, onSuccess }: BuildingF
                         <input
                           type="text"
                           value={section.description}
-                          onChange={(e) => updateSection(index, "description", e.target.value)}
+                          onChange={(e) =>
+                            updateSection(index, "description", e.target.value)
+                          }
                           className="w-full px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                           placeholder="Section description"
                         />
@@ -278,8 +350,18 @@ export default function BuildingForm({ building, onClose, onSuccess }: BuildingF
                             onClick={() => removeSection(index)}
                             className="text-red-500 hover:text-red-700 transition-colors"
                           >
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            <svg
+                              className="w-5 h-5"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                              />
                             </svg>
                           </button>
                         )}

@@ -7,28 +7,38 @@ export default function LandingPage() {
   const [currentText, setCurrentText] = useState("");
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isDeleting, setIsDeleting] = useState(false);
-  
+
   const texts = ["Architects.", "Consultants.", "Managers.", "Engineers."];
 
   useEffect(() => {
     if (isLoading || isAuthenticated) return;
-    const timeout = setTimeout(() => {
-      const current = texts[currentIndex];
-      if (isDeleting) {
-        setCurrentText(current.substring(0, currentText.length - 1));
-        if (currentText === "") {
-          setIsDeleting(false);
-          setCurrentIndex((prev) => (prev + 1) % texts.length);
+    const timeout = setTimeout(
+      () => {
+        const current = texts[currentIndex];
+        if (isDeleting) {
+          setCurrentText(current.substring(0, currentText.length - 1));
+          if (currentText === "") {
+            setIsDeleting(false);
+            setCurrentIndex((prev) => (prev + 1) % texts.length);
+          }
+        } else {
+          setCurrentText(current.substring(0, currentText.length + 1));
+          if (currentText === current) {
+            setTimeout(() => setIsDeleting(true), 2000);
+          }
         }
-      } else {
-        setCurrentText(current.substring(0, currentText.length + 1));
-        if (currentText === current) {
-          setTimeout(() => setIsDeleting(true), 2000);
-        }
-      }
-    }, isDeleting ? 50 : 100);
+      },
+      isDeleting ? 50 : 100,
+    );
     return () => clearTimeout(timeout);
-  }, [currentText, currentIndex, isDeleting, isLoading, isAuthenticated, texts]);
+  }, [
+    currentText,
+    currentIndex,
+    isDeleting,
+    isLoading,
+    isAuthenticated,
+    texts,
+  ]);
 
   if (isLoading) {
     return (
@@ -47,36 +57,39 @@ export default function LandingPage() {
       role: "Senior Architect",
       company: "Urban Design Co.",
       text: "Architect Haven has revolutionized how we present building concepts to clients. The 3D visualization is incredible.",
-      avatar: "SJ"
+      avatar: "SJ",
     },
     {
       name: "Michael Chen",
       role: "Construction Manager",
       company: "BuildTech Solutions",
       text: "The document management system keeps all our project files organized and easily accessible. Game changer!",
-      avatar: "MC"
+      avatar: "MC",
     },
     {
       name: "Emily Rodriguez",
       role: "Design Consultant",
       company: "Modern Spaces",
       text: "Being able to share interactive 3D models with stakeholders has improved our collaboration tremendously.",
-      avatar: "ER"
+      avatar: "ER",
     },
     {
       name: "David Park",
       role: "Project Engineer",
       company: "Structural Innovations",
       text: "The apartment-level detail and document attachment features are exactly what we needed for complex projects.",
-      avatar: "DP"
-    }
+      avatar: "DP",
+    },
   ];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-gray-800">
       {/* Navigation */}
       <nav className="flex justify-between items-center p-6">
-        <div className="text-white text-2xl font-bold" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+        <div
+          className="text-white text-2xl font-bold"
+          style={{ fontFamily: "Montserrat, sans-serif" }}
+        >
           Architect Haven
         </div>
         <Link
@@ -89,18 +102,21 @@ export default function LandingPage() {
 
       {/* Hero Section */}
       <div className="flex flex-col items-center justify-center text-center px-6 py-20">
-        <h1 className="text-5xl md:text-7xl font-bold text-white mb-6" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+        <h1
+          className="text-5xl md:text-7xl font-bold text-white mb-6"
+          style={{ fontFamily: "Montserrat, sans-serif" }}
+        >
           The Best 3D Modeling Tool for{" "}
           <span className="text-blue-400">
             {currentText}
             <span className="animate-pulse">|</span>
           </span>
         </h1>
-        
+
         <p className="text-xl md:text-2xl text-gray-300 mb-12 max-w-3xl">
           Bridging the gap between Architects and Advisors.
         </p>
-        
+
         <Link
           to="/auth"
           className="bg-green-500 hover:bg-green-600 text-white px-8 py-4 rounded-lg text-xl font-semibold transition-colors shadow-lg hover:shadow-xl"
@@ -111,10 +127,13 @@ export default function LandingPage() {
 
       {/* Testimonials Section */}
       <div className="px-6 py-20">
-        <h2 className="text-4xl font-bold text-white text-center mb-16" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+        <h2
+          className="text-4xl font-bold text-white text-center mb-16"
+          style={{ fontFamily: "Montserrat, sans-serif" }}
+        >
           Trusted by Industry Leaders
         </h2>
-        
+
         <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8">
           {testimonials.map((testimonial, index) => (
             <div
@@ -126,12 +145,16 @@ export default function LandingPage() {
                   {testimonial.avatar}
                 </div>
                 <div>
-                  <h3 className="text-white font-semibold">{testimonial.name}</h3>
+                  <h3 className="text-white font-semibold">
+                    {testimonial.name}
+                  </h3>
                   <p className="text-gray-400 text-sm">{testimonial.role}</p>
                   <p className="text-gray-500 text-sm">{testimonial.company}</p>
                 </div>
               </div>
-              <p className="text-gray-300 leading-relaxed">"{testimonial.text}"</p>
+              <p className="text-gray-300 leading-relaxed">
+                "{testimonial.text}"
+              </p>
             </div>
           ))}
         </div>
