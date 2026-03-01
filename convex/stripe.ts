@@ -3,7 +3,10 @@
 import { v } from "convex/values";
 import { action, internalAction } from "./_generated/server";
 import { internal } from "./_generated/api";
+import { getAuthUserId } from "@convex-dev/auth/server";
 import Stripe from "stripe";
+
+const PRO_PRICE_CENTS = 2000;
 
 function getStripe() {
   const key = process.env.STRIPE_SECRET_KEY;
@@ -11,15 +14,13 @@ function getStripe() {
   return new Stripe(key);
 }
 
-const PRO_PRICE_CENTS = 2000;
-
 export const createCheckoutOrPortal = action({
   args: {},
   handler: async (ctx): Promise<string> => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Not authenticated");
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
 
-    const userId = identity.subject as import("./_generated/dataModel").Id<"users">;
+    const identity = await ctx.auth.getUserIdentity();
     const subscription = await ctx.runQuery(internal.subscriptions.getByUserForAction, {
       userId,
     });
@@ -38,30 +39,36 @@ export const createCheckoutOrPortal = action({
       return session.url!;
     }
 
+    const priceId = process.env.STRIPE_PRICE_ID;
+    const lineItems: Stripe.Checkout.SessionCreateParams["line_items"] = priceId
+      ? [{ price: priceId, quantity: 1 }]
+      : [
+          {
+            price_data: {
+              currency: "usd",
+              product_data: {
+                name: "Architect Haven Pro",
+                description: "Unlimited buildings",
+              },
+              unit_amount: PRO_PRICE_CENTS,
+              recurring: { interval: "month" },
+            },
+            quantity: 1,
+          },
+        ];
+
     const session = await getStripe().checkout.sessions.create({
       success_url: `${returnUrl}?success=1`,
       cancel_url: returnUrl,
       payment_method_types: ["card"],
       mode: "subscription",
       billing_address_collection: "auto",
-      customer_email: identity.email ?? undefined,
-      line_items: [
-        {
-          price_data: {
-            currency: "usd",
-            product_data: {
-              name: "Architect Haven Pro",
-              description: "Unlimited buildings",
-            },
-            unit_amount: PRO_PRICE_CENTS,
-            recurring: { interval: "month" },
-          },
-          quantity: 1,
-        },
-      ],
+      customer_email: identity?.email ?? undefined,
+      line_items: lineItems,
       metadata: { userId },
     });
-    return session.url!;
+    if (!session.url) throw new Error("Stripe did not return checkout URL");
+    return session.url;
   },
 });
 

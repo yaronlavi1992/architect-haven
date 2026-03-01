@@ -5,6 +5,7 @@ import { toast } from "sonner";
 
 export default function Settings() {
   const subscription = useQuery(api.subscriptions.getByUser);
+  const plans = useQuery(api.plans.get);
   const createCheckout = useAction(api.stripe.createCheckoutOrPortal);
   const [loading, setLoading] = useState(false);
 
@@ -12,13 +13,20 @@ export default function Settings() {
     subscription?.stripeCurrentPeriodEnd &&
     subscription.stripeCurrentPeriodEnd * 1000 > Date.now();
 
+  const plan = plans?.plans[isPro ? "pro" : "free"];
+
   const handleManageSubscription = async () => {
     setLoading(true);
     try {
       const url = await createCheckout();
-      if (url) window.location.href = url;
+      if (url) {
+        window.location.href = url;
+      } else {
+        toast.error("No checkout URL returned");
+      }
     } catch (e) {
-      toast.error("Failed to open checkout");
+      const msg = e instanceof Error ? e.message : "Failed to open checkout";
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
@@ -43,15 +51,15 @@ export default function Settings() {
         }`}>
           <div>
             <h3 className={`font-semibold ${isPro ? "text-indigo-800" : "text-green-800"}`}>
-              {isPro ? "Pro Plan" : "Free Plan"}
+              {plan?.name ?? (isPro ? "Pro Plan" : "Free Plan")}
             </h3>
             <p className={`text-sm ${isPro ? "text-indigo-600" : "text-green-600"}`}>
-              {isPro ? "Unlimited buildings" : "Up to 5 buildings"}
+              {plan?.buildingLimit != null ? `Up to ${plan.buildingLimit} buildings` : "Unlimited buildings"}
             </p>
           </div>
           <div className="text-right">
             <div className={`text-2xl font-bold ${isPro ? "text-indigo-800" : "text-green-800"}`}>
-              {isPro ? "$20" : "$0"}
+              {plan?.priceDisplay ?? (isPro ? "$20" : "$0")}
             </div>
             <div className={`text-sm ${isPro ? "text-indigo-600" : "text-green-600"}`}>
               per month
@@ -62,24 +70,14 @@ export default function Settings() {
         <div className="mt-6">
           <h3 className="font-semibold text-gray-900 mb-3">Plan Features</h3>
           <ul className="space-y-2 text-gray-600">
-            <li className="flex items-center">
-              <svg className="w-4 h-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-              </svg>
-              {isPro ? "Unlimited buildings" : "Up to 5 buildings"}
-            </li>
-            <li className="flex items-center">
-              <svg className="w-4 h-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-              </svg>
-              3D visualization
-            </li>
-            <li className="flex items-center">
-              <svg className="w-4 h-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-              </svg>
-              Document management
-            </li>
+            {(plan?.features ?? (isPro ? ["Unlimited buildings", "3D visualization", "Document management"] : ["Up to 5 buildings", "3D visualization", "Document management"])).map((feature) => (
+              <li key={feature} className="flex items-center">
+                <svg className="w-4 h-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+                {feature}
+              </li>
+            ))}
           </ul>
         </div>
 
@@ -90,7 +88,7 @@ export default function Settings() {
           <p className="text-blue-600 text-sm mb-3">
             {isPro
               ? "Update payment method or cancel subscription"
-              : "Get unlimited buildings for $20/month"}
+              : `Get unlimited buildings for ${plans?.proPriceDisplay ?? "$20"}/month`}
           </p>
           <button
             onClick={handleManageSubscription}

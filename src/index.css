@@ -12,6 +12,10 @@
   @apply text-slate-600;
 }
 
+html, body {
+  overflow-x: hidden;
+}
+
 body {
   font-family:
     "Inter Variable",

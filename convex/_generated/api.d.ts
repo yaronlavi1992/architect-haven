@@ -11,6 +11,7 @@
 import type * as auth from "../auth.js";
 import type * as buildings from "../buildings.js";
 import type * as http from "../http.js";
+import type * as plans from "../plans.js";
 import type * as router from "../router.js";
 import type * as stripe from "../stripe.js";
 import type * as stripeWebhook from "../stripeWebhook.js";
@@ -26,6 +27,7 @@ declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   buildings: typeof buildings;
   http: typeof http;
+  plans: typeof plans;
   router: typeof router;
   stripe: typeof stripe;
   stripeWebhook: typeof stripeWebhook;

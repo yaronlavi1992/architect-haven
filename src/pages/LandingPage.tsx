@@ -1,35 +1,45 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
+import { useConvexAuth } from "convex/react";
 
 export default function LandingPage() {
+  const { isAuthenticated, isLoading } = useConvexAuth();
   const [currentText, setCurrentText] = useState("");
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isDeleting, setIsDeleting] = useState(false);
   
   const texts = ["Architects.", "Consultants.", "Managers.", "Engineers."];
-  
+
   useEffect(() => {
+    if (isLoading || isAuthenticated) return;
     const timeout = setTimeout(() => {
       const current = texts[currentIndex];
-      
       if (isDeleting) {
         setCurrentText(current.substring(0, currentText.length - 1));
-        
         if (currentText === "") {
           setIsDeleting(false);
           setCurrentIndex((prev) => (prev + 1) % texts.length);
         }
       } else {
         setCurrentText(current.substring(0, currentText.length + 1));
-        
         if (currentText === current) {
           setTimeout(() => setIsDeleting(true), 2000);
         }
       }
     }, isDeleting ? 50 : 100);
-    
     return () => clearTimeout(timeout);
-  }, [currentText, currentIndex, isDeleting, texts]);
+  }, [currentText, currentIndex, isDeleting, isLoading, isAuthenticated, texts]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+      </div>
+    );
+  }
+  if (isAuthenticated) {
+    return <Navigate to="/dashboard" replace />;
+  }
 
   const testimonials = [
     {

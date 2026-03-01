@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { query, mutation } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
+import { FREE_LIMIT } from "./plans";
 
 export const list = query({
   args: {},
@@ -61,7 +62,6 @@ export const create = mutation({
       throw new Error("Not authenticated");
     }
 
-    const FREE_LIMIT = 5;
     const subscription = await ctx.db
       .query("subscriptions")
       .withIndex("by_user", (q) => q.eq("userId", userId))

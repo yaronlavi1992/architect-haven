@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useId, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
@@ -9,17 +9,37 @@ export default function BuildingsList() {
   const buildings = useQuery(api.buildings.list);
   const deleteBuilding = useMutation(api.buildings.remove);
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
+  const titleId = useId();
+  const descId = useId();
 
-  const handleDelete = async (id: string) => {
-    if (confirm("Are you sure you want to delete this building?")) {
-      try {
-        await deleteBuilding({ id: id as any });
-        toast.success("Building deleted successfully");
-      } catch (error) {
-        toast.error("Failed to delete building");
-      }
+  const handleDeleteClick = (id: string) => {
+    setDeleteTargetId(id);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteTargetId) return;
+    try {
+      await deleteBuilding({ id: deleteTargetId as any });
+      toast.success("Building deleted successfully");
+      setDeleteTargetId(null);
+    } catch (error) {
+      toast.error("Failed to delete building");
     }
   };
+
+  const handleDeleteCancel = () => {
+    setDeleteTargetId(null);
+  };
+
+  useEffect(() => {
+    if (deleteTargetId == null) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setDeleteTargetId(null);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [deleteTargetId]);
 
   const getTotalFloors = (sections: any[]) => {
     return sections.reduce((total, section) => {
@@ -29,7 +49,7 @@ export default function BuildingsList() {
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-8">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>
             Your Buildings
@@ -40,7 +60,7 @@ export default function BuildingsList() {
         </div>
         <button
           onClick={() => setShowCreateForm(true)}
-          className="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg font-semibold transition-colors"
+          className="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg font-semibold transition-colors mt-4 sm:mt-0 self-center sm:self-auto"
         >
           Create Building
         </button>
@@ -81,7 +101,7 @@ export default function BuildingsList() {
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
-                      handleDelete(building._id);
+                      handleDeleteClick(building._id);
                     }}
                     className="text-red-500 hover:text-red-700 transition-colors"
                   >
@@ -111,6 +131,46 @@ export default function BuildingsList() {
             toast.success("Building created successfully");
           }}
         />
+      )}
+
+      {deleteTargetId != null && (
+        <div
+          className="fixed inset-0 z-[200] flex items-center justify-center p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={titleId}
+          aria-describedby={descId}
+        >
+          <div
+            className="fixed inset-0 bg-black/50"
+            aria-hidden="true"
+            onClick={handleDeleteCancel}
+          />
+          <div className="relative bg-white rounded-xl shadow-xl max-w-md w-full p-6 border border-gray-200">
+            <h2 id={titleId} className="text-lg font-semibold text-gray-900 mb-2" style={{ fontFamily: "Montserrat, sans-serif" }}>
+              Delete building?
+            </h2>
+            <p id={descId} className="text-gray-600 mb-6">
+              Are you sure you want to delete this building? This action cannot be undone.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={handleDeleteCancel}
+                className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteConfirm}
+                className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

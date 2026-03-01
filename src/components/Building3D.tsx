@@ -1,4 +1,4 @@
-import { useRef, useMemo } from "react";
+import { useRef, useMemo, useEffect, useCallback } from "react";
 import * as THREE from "three";
 
 interface Building3DProps {
@@ -31,6 +31,11 @@ function ApartmentSlice({
     return { geometry: geom, edges: new THREE.EdgesGeometry(geom) };
   }, [apartmentIndex, segmentWidth, radialSegments]);
 
+  useEffect(() => () => {
+    geometry.dispose();
+    edges.dispose();
+  }, [geometry, edges]);
+
   return (
     <group>
       <mesh position={[0, FLOOR_HEIGHT / 2, 0]} onClick={(e) => { e.stopPropagation(); onClick(); }}>
@@ -48,21 +53,29 @@ function ApartmentSlice({
 export default function Building3D({ building, onApartmentClick, selectedApartments }: Building3DProps) {
   const groupRef = useRef<THREE.Group>(null);
 
-  const getApartmentColor = (apartment: any, sectionIndex: number, floorIndex: number, apartmentIndex: number) => {
-    const apartmentId = `${sectionIndex}-${floorIndex}-${apartmentIndex}`;
-    if (selectedApartments.has(apartmentId)) return "#FFEA00";
-    if (apartment.documents?.length > 0) return apartment.documents[0].color || "#fff";
-    return "#fff";
-  };
+  const getApartmentColor = useCallback(
+    (apartment: any, sectionIndex: number, floorIndex: number, apartmentIndex: number) => {
+      const apartmentId = `${sectionIndex}-${floorIndex}-${apartmentIndex}`;
+      if (selectedApartments.has(apartmentId)) return "#FFEA00";
+      if (apartment.documents?.length > 0) return apartment.documents[0].color || "#fff";
+      return "#fff";
+    },
+    [selectedApartments]
+  );
+
+  const baseGeometry = useMemo(() => new THREE.BoxGeometry(20, 1, 10), []);
+  const baseMaterial = useMemo(() => new THREE.MeshPhysicalMaterial({ color: "white" }), []);
+
+  useEffect(() => () => {
+    baseGeometry.dispose();
+    baseMaterial.dispose();
+  }, [baseGeometry, baseMaterial]);
 
   let globalFloorIndex = 0;
 
   return (
     <>
-      <mesh position={[0, -0.5, 0]}>
-        <boxGeometry args={[20, 1, 10]} />
-        <meshPhysicalMaterial color="white" />
-      </mesh>
+      <mesh position={[0, -0.5, 0]} geometry={baseGeometry} material={baseMaterial} />
 
       <group ref={groupRef}>
         {building.sections.map((section: any, sectionIndex: number) => {

@@ -1,14 +1,16 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import { toast } from "sonner";
+import { ErrorBoundary } from "react-error-boundary";
 import BuildingForm from "../components/BuildingForm";
 import DocumentPanel from "../components/DocumentPanel";
 import FilesLegend from "../components/FilesLegend";
 import Building3D from "../components/Building3D";
+import ErrorFallback from "../components/ErrorFallback";
 
 export default function BuildingDetail() {
   const { id } = useParams<{ id: string }>();
@@ -27,58 +29,55 @@ export default function BuildingDetail() {
     }
   }, [building]);
 
-  const handleApartmentClick = (sectionIndex: number, floorIndex: number, apartmentIndex: number) => {
-    const apartmentId = `${sectionIndex}-${floorIndex}-${apartmentIndex}`;
-    const newSelected = new Set(selectedApartments);
-    
-    if (newSelected.has(apartmentId)) {
-      newSelected.delete(apartmentId);
-    } else {
-      newSelected.add(apartmentId);
-    }
-    
-    setSelectedApartments(newSelected);
+  const handleApartmentClick = useCallback(
+    (sectionIndex: number, floorIndex: number, apartmentIndex: number) => {
+      const apartmentId = `${sectionIndex}-${floorIndex}-${apartmentIndex}`;
+      setSelectedApartments((prev) => {
+        const newSelected = new Set(prev);
+        if (newSelected.has(apartmentId)) newSelected.delete(apartmentId);
+        else newSelected.add(apartmentId);
+        return newSelected;
+      });
 
-    // Update building data to reflect selection
-    if (buildingData) {
-      const updatedSections = buildingData.sections.map((section: any, sIdx: number) => {
-        if (sIdx !== sectionIndex) return section;
-        
+      setBuildingData((prev: any) => {
+        if (!prev) return prev;
         return {
-          ...section,
-          apartments: section.apartments.map((apt: any, aIdx: number) => ({
-            ...apt,
-            isSelected: aIdx === apartmentIndex ? !apt.isSelected : apt.isSelected
-          }))
+          ...prev,
+          sections: prev.sections.map((section: any, sIdx: number) => {
+            if (sIdx !== sectionIndex) return section;
+            return {
+              ...section,
+              apartments: section.apartments.map((apt: any, aIdx: number) => ({
+                ...apt,
+                isSelected: aIdx === apartmentIndex ? !apt.isSelected : apt.isSelected,
+              })),
+            };
+          }),
         };
       });
+    },
+    []
+  );
 
-      setBuildingData({
-        ...buildingData,
-        sections: updatedSections
-      });
-    }
-  };
-
-  const handleClearSelection = () => {
+  const handleClearSelection = useCallback(() => {
     setSelectedApartments(new Set());
-    if (buildingData) {
-      const updatedSections = buildingData.sections.map((section: any) => ({
-        ...section,
-        apartments: section.apartments.map((apt: any) => ({
-          ...apt,
-          isSelected: false
-        }))
-      }));
+    setBuildingData((prev: any) =>
+      prev
+        ? {
+            ...prev,
+            sections: prev.sections.map((section: any) => ({
+              ...section,
+              apartments: section.apartments.map((apt: any) => ({
+                ...apt,
+                isSelected: false,
+              })),
+            })),
+          }
+        : prev
+    );
+  }, []);
 
-      setBuildingData({
-        ...buildingData,
-        sections: updatedSections
-      });
-    }
-  };
-
-  const handleDocumentAssign = async (documentId: string) => {
+  const handleDocumentAssign = useCallback(async (documentId: string) => {
     if (!buildingData || selectedApartments.size === 0) return;
 
     const document = documents?.find(doc => doc._id === documentId);
@@ -131,9 +130,9 @@ export default function BuildingDetail() {
     } catch (error) {
       toast.error("Failed to assign document");
     }
-  };
+  }, [buildingData, selectedApartments, documents, updateBuilding]);
 
-  const handleDocumentLegendClick = (color: string) => {
+  const handleDocumentLegendClick = useCallback((color: string) => {
     if (!buildingData) return;
 
     const newSelected = new Set<string>();
@@ -152,9 +151,9 @@ export default function BuildingDetail() {
     });
 
     setSelectedApartments(newSelected);
-  };
+  }, [buildingData]);
 
-  const handleRemoveDocument = async (sectionIndex: number, apartmentIndex: number, documentIndex: number) => {
+  const handleRemoveDocument = useCallback(async (sectionIndex: number, apartmentIndex: number, documentIndex: number) => {
     if (!buildingData) return;
 
     const updatedSections = buildingData.sections.map((section: any, sIdx: number) => {
@@ -189,7 +188,7 @@ export default function BuildingDetail() {
     } catch (error) {
       toast.error("Failed to remove document");
     }
-  };
+  }, [buildingData, updateBuilding]);
 
   // Calculate total floors for camera positioning
   const totalFloors = building ? building.sections.reduce((total: number, section: any) => {
@@ -260,24 +259,26 @@ export default function BuildingDetail() {
       <div className="flex-1 flex relative min-h-0">
         <div className="flex-1 relative w-full min-h-0">
           <div className="h-full w-full min-h-0 bg-blue-200 rounded-lg overflow-hidden">
-            <Canvas camera={{ 
-              position: [-26, totalFloors * 6, totalFloors * 10], 
-              fov: 50 
-            }}>
-              <ambientLight intensity={3} color="white" />
-              <pointLight position={[0, 10, 0]} intensity={1} color="white" />
-              <Building3D 
-                building={buildingData || building} 
-                onApartmentClick={handleApartmentClick}
-                selectedApartments={selectedApartments}
-              />
-              <OrbitControls 
-                enablePan={true} 
-                enableZoom={true} 
-                enableRotate={true}
-                target={[0, 20, 0]}
-              />
-            </Canvas>
+            <ErrorBoundary FallbackComponent={ErrorFallback}>
+              <Canvas camera={{
+                position: [-26, totalFloors * 6, totalFloors * 10],
+                fov: 50,
+              }}>
+                <ambientLight intensity={3} color="white" />
+                <pointLight position={[0, 10, 0]} intensity={1} color="white" />
+                <Building3D
+                  building={buildingData || building}
+                  onApartmentClick={handleApartmentClick}
+                  selectedApartments={selectedApartments}
+                />
+                <OrbitControls
+                  enablePan={true}
+                  enableZoom={true}
+                  enableRotate={true}
+                  target={[0, 20, 0]}
+                />
+              </Canvas>
+            </ErrorBoundary>
           </div>
           
           <FilesLegend 
