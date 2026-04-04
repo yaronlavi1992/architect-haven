@@ -1,15 +1,13 @@
+import { sveltekit } from "@sveltejs/kit/vite";
 import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
-import path from "path";
 
-// https://vite.dev/config/
-export default defineConfig(({ mode }) => ({
+export default defineConfig({
   plugins: [
-    react(),
+    sveltekit(),
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["favicon.ico", "mask-icon.svg"],
+      includeAssets: ["favicon.ico", "mask-icon.svg", "logo.png"],
       manifest: {
         name: "Architect Haven",
         short_name: "Architect Haven",
@@ -22,43 +20,27 @@ export default defineConfig(({ mode }) => ({
         ],
       },
     }),
-    // The code below enables dev tools like taking screenshots of your site
-    // while it is being developed on chef.convex.dev.
-    // Feel free to remove this code if you're no longer developing your app with Chef.
-    mode === "development"
-      ? {
-          name: "inject-chef-dev",
-          transform(code: string, id: string) {
-            if (id.includes("main.tsx")) {
-              return {
-                code: `${code}
-
-/* Added by Vite plugin inject-chef-dev */
-window.addEventListener('message', async (message) => {
-  if (message.source !== window.parent) return;
-  if (message.data.type !== 'chefPreviewRequest') return;
-
-  const worker = await import('https://chef.convex.dev/scripts/worker.bundled.mjs');
-  await worker.respondToMessage(message);
-});
-            `,
-                map: null,
-              };
-            }
-            return null;
-          },
-        }
-      : null,
-    // End of code for taking screenshots on chef.convex.dev.
-  ].filter(Boolean),
-  resolve: {
-    alias: {
-      "@": path.resolve(__dirname, "./src"),
-    },
-  },
+  ],
   server: {
     port: 5173,
     strictPort: true,
-    host: "127.0.0.1",
+    host: "localhost",
   },
-}));
+  build: {
+    // The 3D viewer ships a large Three.js chunk that is intentional for this app.
+    chunkSizeWarningLimit: 600,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes("node_modules")) return;
+
+          if (id.includes("three")) return "three";
+          if (id.includes("convex")) return "convex";
+          if (id.includes("lucide-svelte")) return "icons";
+
+          return "vendor";
+        },
+      },
+    },
+  },
+});

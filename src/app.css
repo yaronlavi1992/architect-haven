@@ -1,0 +1,58 @@
+@import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-light: #ffffff;
+  --color-dark: #171717;
+}
+
+html,
+body {
+  min-height: 100%;
+  overflow-x: hidden;
+}
+
+body {
+  margin: 0;
+  color: var(--color-dark);
+  background: var(--color-light);
+  font-family:
+    "Inter Variable",
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.font-display {
+  font-family: "Montserrat", ui-sans-serif, system-ui, sans-serif;
+}
+
+.accent-text {
+  @apply text-slate-600;
+}
+
+.auth-input-field {
+  @apply w-full rounded-container border border-gray-200 bg-white px-4 py-3 shadow-sm outline-none transition-shadow hover:shadow focus:border-primary focus:ring-1 focus:ring-primary;
+}
+
+.auth-button {
+  @apply w-full rounded bg-primary px-4 py-3 font-semibold text-white shadow-sm transition-colors hover:bg-primary-hover hover:shadow disabled:cursor-not-allowed disabled:opacity-50;
+}

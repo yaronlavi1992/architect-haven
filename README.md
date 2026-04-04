@@ -1,31 +1,21 @@
-# Architect Haven - 3D Building Modeling App
-  
-This is a project built with [Chef](https://chef.convex.dev) using [Convex](https://convex.dev) as its backend.
- You can find docs about Chef with useful information like how to deploy to production [here](https://docs.convex.dev/chef).
-  
-This project is connected to the Convex deployment named [`fine-panda-433`](https://dashboard.convex.dev/d/fine-panda-433).
-  
-## Project structure
-  
-The frontend code is in the `app` directory and is built with [Vite](https://vitejs.dev/).
-  
-The backend code is in the `convex` directory.
-  
-`npm run dev` will start the frontend and backend servers.
+# Architect Haven
 
-## App authentication
+Architect Haven is a SvelteKit 2 + Svelte 5 application backed by Convex.
 
-Chef apps use [Convex Auth](https://auth.convex.dev/) with Anonymous auth for easy sign in. You may wish to change this before deploying your app.
+## Structure
 
-## Developing and deploying your app
+- Frontend: `src/routes`, `src/lib`, `src/app.css`
+- Convex backend: `src/convex`
 
-**Vercel (frontend):** Ensure the repo is connected in the [Vercel dashboard](https://vercel.com/dashboard) and the **Production Branch** is set to `master`. See [docs/DEPLOY.md](docs/DEPLOY.md) for details.
+`npm run dev` starts the SvelteKit frontend and Convex dev server together.
 
-Check out the [Convex docs](https://docs.convex.dev/) for more information on how to develop with Convex.
-* If you're new to Convex, the [Overview](https://docs.convex.dev/understanding/) is a good place to start
-* Check out the [Hosting and Deployment](https://docs.convex.dev/production/) docs for how to deploy your app
-* Read the [Best Practices](https://docs.convex.dev/understanding/best-practices/) guide for tips on how to improve you app further
+## Convex
 
-## HTTP API
+This app uses `convex-svelte` on the client and Convex Auth for password, Google, and anonymous sign-in.
 
-User-defined http routes are defined in the `convex/router.ts` file. We split these routes into a separate file from `convex/http.ts` to allow us to prevent the LLM from modifying the authentication routes.
+The active Convex functions directory is configured in [convex.json](/C:/Users/yaron/Downloads/parent/architect_haven_-_3d_building_modeling_app/convex.json).
+
+## Build
+
+- `npm run check`
+- `npm run build`
