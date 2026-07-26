@@ -1,12 +1,12 @@
 name: Triage New Issues
 
-# Triages a newly opened issue with an Oz cloud agent.
+# Triages a newly opened issue with an Antigravity (agy) agent.
 #
 # The agent runs read-only (issues: read) and emits a structured JSON result;
 # the separate `apply` job (issues: write) applies the label and comment to the
 # triggering issue only.
 #
-# Setup: the WARP_API_KEY repository secret must be set (the Oz API key).
+# Setup: the GEMINI_API_KEY repository secret must be set.
 
 on:
   issues:
@@ -30,40 +30,33 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Triage with Oz agent
-        uses: warpdotdev/oz-agent-action@v1.0.25
+      - name: Install Antigravity CLI (agy)
+        run: |
+          npm install -g @google/antigravity-cli || curl -fsSL https://antigravity.google/install.sh | sh || true
+
+      - name: Triage with Antigravity agent
         id: triage
         env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GH_TOKEN: ${{ github.token }}
-        with:
-          skill: yaronlavi1992/architect-haven:triage
-          name: "Triage issue #${{ github.event.issue.number }}"
-          prompt: |
-            Triage GitHub issue #${{ github.event.issue.number }} in this
-            repository using the triage skill.
+        run: |
+          set -euo pipefail
+          
+          # Execute agy in non-interactive print mode with auto-approved permissions
+          agy --dangerously-skip-permissions -p \
+            "Triage GitHub issue #${{ github.event.issue.number }} in this repository using the triage skill at .agents/skills/triage/SKILL.md.
 
             - Repository: ${{ github.repository }}
             - Issue URL: ${{ github.event.issue.html_url }}
 
-            Follow the triage skill: use the `gh` CLI to fetch the full issue
-            (title, body, comments, existing labels) and related open issues,
-            read `roadmap.md` and `vision.md` if present, inspect this
-            checked-out codebase, then choose exactly one
-            implementation-readiness state.
+            Follow the triage skill: use the `gh` CLI to fetch the full issue (title, body, comments, existing labels) and related open issues, read `roadmap.md` and `vision.md` if present, inspect this checked-out codebase, then choose exactly one implementation-readiness state.
 
-            If the issue is a UI/interactive bug (or mentions screenshots, video,
-            computer use, browser use, drag-and-drop, or verify-behavior), optionally
-            invoke `.agents/skills/verify-behavior` in `reproduce` mode with computer
-            use enabled before deciding. Prefer visual evidence when it materially
-            improves the readiness decision.
+            Return the JSON result the skill specifies as your final response; the apply job applies the label and comment from it. Do not comment on, label, or otherwise mutate the issue directly from this job." > raw_agent_output.txt
 
-            Return the JSON result the skill specifies as your final response;
-            the apply job applies the label and comment from it. Do not comment
-            on, label, or otherwise mutate the issue directly from this job.
-          warp_api_key: ${{ secrets.WARP_API_KEY }}
-          profile: ${{ vars.WARP_AGENT_PROFILE || '' }}
-          cloud: true
-          computer_use: true
+          # Set output for downstream apply job
+          echo "agent_output<<EOF" >> $GITHUB_OUTPUT
+          cat raw_agent_output.txt >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
 
   apply:
     name: Apply triage result
@@ -86,9 +79,6 @@ jobs:
             exit 1
           fi
 
-          # The action returns the agent's full final response, which may
-          # include prose around the JSON. Extract the last triage-result
-          # object (the one carrying "state"/"label") into triage_result.json.
           printf '%s' "$TRIAGE_RESULT" > raw_output.txt
           if ! python3 - raw_output.txt > triage_result.json <<'PY'
           import json, sys
@@ -121,9 +111,6 @@ jobs:
           STATE="$(jq -r '.state // ""' triage_result.json)"
           LABEL="$(jq -r '.label // ""' triage_result.json)"
 
-          # Require the structured fields the apply step needs. The set of valid
-          # states/labels is owned by the triage skill, so it is intentionally
-          # not duplicated here.
           if [ -z "$STATE" ]; then
             echo "::error::Triage result is missing a 'state'." >&2
             exit 1
@@ -137,21 +124,19 @@ jobs:
           echo "Triage state: $STATE"
           echo "Applying label: $LABEL"
 
-          # Remove any superseded triage-state labels the agent listed. Failures
-          # (e.g. a label that is not present) are non-fatal.
           while IFS= read -r remove_label; do
             [ -z "$remove_label" ] && continue
             echo "Removing label: $remove_label"
             gh issue edit "$ISSUE_NUMBER" --repo "$REPO" --remove-label "$remove_label" || true
           done < <(jq -r '(.remove_labels // [])[]' triage_result.json)
 
-          # Apply the chosen triage-state label to the triggering issue only.
           gh issue edit "$ISSUE_NUMBER" --repo "$REPO" --add-label "$LABEL"
 
           jq -r '.comment // ""' triage_result.json > comment.md
           if [ -s comment.md ]; then
-            printf '\n\n---\n_Powered by [Oz](https://warp.dev/oz)_\n' >> comment.md
+            printf '\n\n---\n_Powered by [Antigravity CLI](https://antigravity.google)_\n' >> comment.md
             gh issue comment "$ISSUE_NUMBER" --repo "$REPO" --body-file comment.md
           else
             echo "No comment body provided by triage result; skipping comment."
           fi
+
