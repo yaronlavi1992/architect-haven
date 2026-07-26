@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "skills": {
+    "implementation": {
+      "source": "warpdotdev-demos/cloud-factory-demo",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/implementation/SKILL.md",
+      "computedHash": "1b276df0acc3a4d4e6e0c52664943e1deb3efed130a62ba9bb36a87de6a9976e"
+    },
+    "improve-review-pr": {
+      "source": "warpdotdev-demos/cloud-factory-demo",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/improve-review-pr/SKILL.md",
+      "computedHash": "7fa916cfec966e03f51c3ff9ce33f43a0f9325526013c61346778b6e50b0b23f"
+    },
+    "oz-cloud-factory-demo": {
+      "source": "warpdotdev-demos/cloud-factory-demo",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/oz-cloud-factory-demo/SKILL.md",
+      "computedHash": "aabc0da431491233b2506617c633986bf91fdd960d2eac6144f664612381a4b2"
+    },
+    "review-pr": {
+      "source": "warpdotdev-demos/cloud-factory-demo",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/review-pr/SKILL.md",
+      "computedHash": "031a0616265eb14302b706dcdbdd174f0870b13db34727e51e15caed42832bcc"
+    },
+    "spec": {
+      "source": "warpdotdev-demos/cloud-factory-demo",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/spec/SKILL.md",
+      "computedHash": "8cfafe982928df3a9ac1790b174fd25c01991149d07948a59f8a278a750fe1c8"
+    },
+    "triage": {
+      "source": "warpdotdev-demos/cloud-factory-demo",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/triage/SKILL.md",
+      "computedHash": "9d09a4337445ba07ffe93761140cb485200c4e338e6f51d2ba039c1dbbb86abd"
+    },
+    "validate-changes-match-specs": {
+      "source": "warpdotdev/common-skills",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/validate-changes-match-specs/SKILL.md",
+      "computedHash": "9123fd70ced064bdd773fd8d2baa8d5d5291fef910eb2c028084074b3ac72c27"
+    },
+    "verify-behavior": {
+      "source": "warpdotdev-demos/cloud-factory-demo",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/verify-behavior/SKILL.md",
+      "computedHash": "ece70db16d842d6f6c666e719be8f31ea3ac219062d231682afe3b4e0f2b9c25"
+    },
+    "write-product-spec": {
+      "source": "warpdotdev/common-skills",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/write-product-spec/SKILL.md",
+      "computedHash": "f20d141e67057570b1fe7c902d5e563415c5ae4a72027d069550ff5b4c5917f2"
+    },
+    "write-tech-spec": {
+      "source": "warpdotdev/common-skills",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/write-tech-spec/SKILL.md",
+      "computedHash": "c7913bfd1ea2be7ce38d5beb7e923b96f5689f6145250af1d81b985e8be4a882"
+    }
+  }
+}
