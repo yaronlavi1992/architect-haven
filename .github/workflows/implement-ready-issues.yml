@@ -37,6 +37,7 @@ jobs:
           # Authenticates the `gh` CLI the agent uses for issues, branches, and PRs.
           GH_TOKEN: ${{ github.token }}
         with:
+          skill: yaronlavi1992/architect-haven:implementation
           name: "Implement issue #${{ github.event.issue.number }}"
           prompt: |
             Use the Implementation skill in this repository to implement the GitHub issue that was just labeled ready to implement.
