@@ -30,33 +30,70 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install Antigravity CLI (agy)
-        run: |
-          npm install -g @google/antigravity-cli || curl -fsSL https://antigravity.google/install.sh | sh || true
-
-      - name: Triage with Antigravity agent
+      - name: Triage with Gemini AI Agent
         id: triage
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
         run: |
-          set -euo pipefail
+          python3 - << 'EOF'
+          import json, os, urllib.request, subprocess
+
+          issue_num = os.environ['ISSUE_NUMBER']
+          api_key = os.environ['GEMINI_API_KEY']
           
-          # Execute agy in non-interactive print mode with auto-approved permissions
-          agy --dangerously-skip-permissions -p \
-            "Triage GitHub issue #${{ github.event.issue.number }} in this repository using the triage skill at .agents/skills/triage/SKILL.md.
+          # Fetch issue details via gh
+          issue_raw = subprocess.check_output(['gh', 'issue', 'view', issue_num, '--json', 'title,body,comments,labels']).decode('utf-8')
+          
+          # Read skill file if present
+          skill_content = ""
+          if os.path.exists('.agents/skills/triage/SKILL.md'):
+              with open('.agents/skills/triage/SKILL.md', 'r') as f:
+                  skill_content = f.read()
 
-            - Repository: ${{ github.repository }}
-            - Issue URL: ${{ github.event.issue.html_url }}
+          prompt = f"""
+          You are an AI Triage Agent for this repository.
+          
+          Triage Skill Instructions:
+          {skill_content}
+          
+          Target Issue Information:
+          {issue_raw}
+          
+          Analyze the issue. Choose exactly one readiness state:
+          - "Ready to implement" -> label: "Ready to implement"
+          - "Ready to spec" -> label: "Ready to spec"
+          - "Needs info" -> label: "Needs info"
+          - "Wait to implement" -> label: "Wait to implement"
+          
+          Return ONLY a raw JSON object with keys:
+          {{
+            "state": "<chosen state>",
+            "label": "<chosen label>",
+            "comment": "<clear markdown explanation of why this triage state was chosen>",
+            "remove_labels": ["Ready to implement", "Ready to spec", "Needs info", "Wait to implement"]
+          }}
+          """
 
-            Follow the triage skill: use the `gh` CLI to fetch the full issue (title, body, comments, existing labels) and related open issues, read `roadmap.md` and `vision.md` if present, inspect this checked-out codebase, then choose exactly one implementation-readiness state.
-
-            Return the JSON result the skill specifies as your final response; the apply job applies the label and comment from it. Do not comment on, label, or otherwise mutate the issue directly from this job." > raw_agent_output.txt
-
-          # Set output for downstream apply job
-          echo "agent_output<<EOF" >> $GITHUB_OUTPUT
-          cat raw_agent_output.txt >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
+          headers = {
+              "Content-Type": "application/json",
+              "X-goog-api-key": api_key
+          }
+          data = json.dumps({"contents": [{"parts": [{"text": prompt}]}]}).encode('utf-8')
+          
+          req = urllib.request.Request(url, data=data, headers=headers, method='POST')
+          with urllib.request.urlopen(req) as resp:
+              res_body = json.loads(resp.read().decode('utf-8'))
+              
+          text_out = res_body['candidates'][0]['content']['parts'][0]['text']
+          
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as f_out:
+              f_out.write("agent_output<<EOF\n")
+              f_out.write(text_out)
+              f_out.write("\nEOF\n")
+          EOF
 
   apply:
     name: Apply triage result
