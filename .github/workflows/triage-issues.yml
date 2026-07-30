@@ -30,9 +30,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Triage with Gemini AI Agent
+      - name: Triage with AI Agent
         id: triage
         env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GH_TOKEN: ${{ github.token }}
           ISSUE_NUMBER: ${{ github.event.issue.number }}
@@ -41,7 +42,8 @@ jobs:
           import json, os, time, urllib.request, urllib.error, subprocess
 
           issue_num = os.environ['ISSUE_NUMBER']
-          api_key = os.environ['GEMINI_API_KEY']
+          groq_key = os.environ.get('GROQ_API_KEY', '').strip()
+          gemini_key = os.environ.get('GEMINI_API_KEY', '').strip()
           
           # Fetch issue details via gh
           issue_raw = subprocess.check_output(['gh', 'issue', 'view', issue_num, '--json', 'title,body,comments,labels']).decode('utf-8')
@@ -76,46 +78,58 @@ jobs:
           }}
           """
 
-          models = [
-              "gemini-2.0-flash-lite",
-              "gemini-2.0-flash",
-              "gemini-1.5-flash"
-          ]
+          res_text = None
 
-          headers = {
-              "Content-Type": "application/json",
-              "X-goog-api-key": api_key
-          }
-          data = json.dumps({"contents": [{"parts": [{"text": prompt}]}]}).encode('utf-8')
-          
-          res_body = None
-          for model in models:
-              url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
-              for attempt in range(3):
+          # Try Groq API first if available
+          if groq_key:
+              print("Attempting triage with Groq API (llama-3.3-70b-versatile)...")
+              url = "https://api.groq.com/openai/v1/chat/completions"
+              headers = {
+                  "Content-Type": "application/json",
+                  "Authorization": f"Bearer {groq_key}"
+              }
+              payload = {
+                  "model": "llama-3.3-70b-versatile",
+                  "response_format": {"type": "json_object"},
+                  "messages": [
+                      {"role": "system", "content": "You are a helpful GitHub issue triage agent. Output valid JSON only."},
+                      {"role": "user", "content": prompt}
+                  ],
+                  "temperature": 0.1
+              }
+              try:
+                  req = urllib.request.Request(url, data=json.dumps(payload).encode('utf-8'), headers=headers, method='POST')
+                  with urllib.request.urlopen(req) as resp:
+                      res_json = json.loads(resp.read().decode('utf-8'))
+                      res_text = res_json['choices'][0]['message']['content']
+                      print("Successfully received triage from Groq API!")
+              except Exception as e:
+                  print(f"Groq API call failed: {e}")
+
+          # Fallback to Gemini API if Groq was not available or failed
+          if not res_text and gemini_key:
+              print("Attempting triage with Gemini API...")
+              models = ["gemini-2.0-flash-lite", "gemini-2.0-flash", "gemini-1.5-flash"]
+              headers = {"Content-Type": "application/json", "X-goog-api-key": gemini_key}
+              data = json.dumps({"contents": [{"parts": [{"text": prompt}]}]}).encode('utf-8')
+              for model in models:
+                  url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
                   try:
                       req = urllib.request.Request(url, data=data, headers=headers, method='POST')
                       with urllib.request.urlopen(req) as resp:
                           res_body = json.loads(resp.read().decode('utf-8'))
-                      break
-                  except urllib.error.HTTPError as e:
-                      err_msg = e.read().decode('utf-8')
-                      print(f"Model {model} attempt {attempt+1} failed ({e.code}): {err_msg}")
-                      if e.code == 429 and attempt < 2:
-                          time.sleep(5)
-                          continue
-                      break
-              if res_body is not None:
-                  print(f"Successfully generated response with model {model}")
-                  break
+                          res_text = res_body['candidates'][0]['content']['parts'][0]['text']
+                          print(f"Successfully generated response with Gemini model {model}")
+                          break
+                  except Exception as e:
+                      print(f"Gemini model {model} failed: {e}")
 
-          if res_body is None:
-              raise RuntimeError("All Gemini API models failed or were rate limited.")
+          if not res_text:
+              raise RuntimeError("No working AI API key found or all requests failed. Please set GROQ_API_KEY in GitHub Secrets.")
 
-          text_out = res_body['candidates'][0]['content']['parts'][0]['text']
-          
           with open(os.environ['GITHUB_OUTPUT'], 'a') as f_out:
               f_out.write("agent_output<<EOF\n")
-              f_out.write(text_out)
+              f_out.write(res_text)
               f_out.write("\nEOF\n")
           EOF
 
