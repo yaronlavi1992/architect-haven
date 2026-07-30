@@ -1,6 +1,6 @@
 # Architect Haven
 
-Architect Haven is a SvelteKit 2 + Svelte 5 application backed by Convex.
+Architect Haven is a 3D building modeling application that utilizes SvelteKit 2 and Svelte 5, backed by Convex for data management.
 
 ## Structure
 
