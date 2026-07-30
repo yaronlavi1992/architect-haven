@@ -1,6 +1,6 @@
 name: Implement Ready Issues
 
-# Runs an OpenCode agent on Groq when an issue receives a ready-to-implement label.
+# Runs an OpenCode agent when an issue receives a ready-to-implement label.
 # The agent follows .agents/skills/implementation/SKILL.md to implement the issue,
 # open a pull request, and report progress back to the original issue.
 
@@ -31,6 +31,7 @@ jobs:
       actions: write # explicitly dispatch review after an agent-created PR
       contents: write # let the agent commit and push an implementation branch
       issues: write # let the agent post progress and final PR link comments
+      models: read # authenticate OpenCode against GitHub Models
       pull-requests: write # let the agent open the implementation PR
     steps:
       - name: Checkout repository
@@ -41,21 +42,17 @@ jobs:
       - name: Install OpenCode
         run: npm install --global opencode-ai@latest
 
-      - name: Implement issue with OpenCode on Groq
+      - name: Implement issue with OpenCode
         id: implement
         env:
-          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           GH_TOKEN: ${{ github.token }}
           ISSUE_NUMBER: ${{ inputs.issue_number || github.event.issue.number }}
+          OPENCODE_CONFIG: ${{ github.workspace }}/.github/opencode-factory.json
           REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
-          if [ -z "${GROQ_API_KEY:-}" ]; then
-            echo "::error::GROQ_API_KEY is not configured."
-            exit 1
-          fi
 
-          opencode run --model groq/llama-3.3-70b-versatile "
+          opencode run --model github-models/gpt-4o-mini "
           First read .agents/skills/implementation/SKILL.md and follow its
           repository implementation workflow for GitHub issue #$ISSUE_NUMBER
           in $REPO.
