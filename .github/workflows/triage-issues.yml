@@ -45,10 +45,10 @@ jobs:
           gh_token = os.environ.get('GH_TOKEN', '').strip()
           groq_key = os.environ.get('GROQ_API_KEY', '').strip()
           gemini_key = os.environ.get('GEMINI_API_KEY', '').strip()
-          
+
           # Fetch issue details via gh
           issue_raw = subprocess.check_output(['gh', 'issue', 'view', issue_num, '--json', 'title,body,comments,labels']).decode('utf-8')
-          
+
           # Read skill file if present
           skill_content = ""
           if os.path.exists('.agents/skills/triage/SKILL.md'):
@@ -57,19 +57,19 @@ jobs:
 
           prompt = f"""
           You are an AI Triage Agent for this repository.
-          
+
           Triage Skill Instructions:
           {skill_content}
-          
+
           Target Issue Information:
           {issue_raw}
-          
+
           Analyze the issue. Choose exactly one readiness state:
           - "Ready to implement" -> label: "Ready to implement"
           - "Ready to spec" -> label: "Ready to spec"
           - "Needs info" -> label: "Needs info"
           - "Wait to implement" -> label: "Wait to implement"
-          
+
           Return ONLY a raw JSON object with keys:
           {{
             "state": "<chosen state>",
@@ -176,6 +176,7 @@ jobs:
     needs: triage
     runs-on: ubuntu-latest
     permissions:
+      actions: write
       issues: write
     steps:
       - name: Apply label and comment
@@ -253,3 +254,19 @@ jobs:
             echo "No comment body provided by triage result; skipping comment."
           fi
 
+          # Labels written with GITHUB_TOKEN do not emit another workflow run.
+          # Explicitly dispatch the next factory stage instead.
+          case "$LABEL" in
+            "Ready to implement"|"ready-to-implement"|"ready to implement")
+              gh workflow run implement-ready-issues.yml \
+                --repo "$REPO" \
+                --ref "${{ github.event.repository.default_branch }}" \
+                -f issue_number="$ISSUE_NUMBER"
+              ;;
+            "Ready to spec"|"ready-to-spec"|"ready to spec")
+              gh workflow run spec-ready-issues.yml \
+                --repo "$REPO" \
+                --ref "${{ github.event.repository.default_branch }}" \
+                -f issue_number="$ISSUE_NUMBER"
+              ;;
+          esac

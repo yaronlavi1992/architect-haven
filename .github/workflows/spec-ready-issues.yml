@@ -8,9 +8,15 @@ name: Spec Ready Issues
 on:
   issues:
     types: [labeled]
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: GitHub issue number to specify
+        required: true
+        type: string
 
 concurrency:
-  group: spec-issue-${{ github.event.issue.number }}
+  group: spec-issue-${{ inputs.issue_number || github.event.issue.number }}
   cancel-in-progress: false
 
 jobs:
@@ -18,13 +24,14 @@ jobs:
     name: Spec issue
     runs-on: ubuntu-latest
     if: >-
+      github.event_name == 'workflow_dispatch' ||
       github.event.label.name == 'Ready to spec' ||
       github.event.label.name == 'ready-to-spec' ||
       github.event.label.name == 'ready to spec'
     permissions:
-      contents: write        # let the agent commit and push a specs branch
-      issues: write          # let the agent post progress and update labels
-      pull-requests: write   # let the agent open the specs PR
+      contents: write # let the agent commit and push a specs branch
+      issues: write # let the agent post progress and update labels
+      pull-requests: write # let the agent open the specs PR
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -35,7 +42,7 @@ jobs:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GH_TOKEN: ${{ github.token }}
-          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          ISSUE_NUMBER: ${{ inputs.issue_number || github.event.issue.number }}
         run: |
           python3 - << 'EOF'
           import json, os, re, subprocess, urllib.request, urllib.error
@@ -134,4 +141,3 @@ jobs:
               "--body", f"Created specifications PR for review: {pr_out}"
           ])
           EOF
-
