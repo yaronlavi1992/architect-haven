@@ -1,0 +1,92 @@
+
+# 2026-07-30 17:47:38.841217
++Title: Enforce building ownership in document queries and mutations
++
++Body:
++## Problem
++
++The Convex document endpoints authenticate the caller but do not verify ownership of the target building:
++
++- `src/convex/buildings.ts:getDocuments` returns documents and signed URLs for an arbitrary `buildingId`.
++- `src/convex/buildings.ts:addDocument` inserts a document for an arbitrary `buildingId`.
++
++An authenticated user who obtains another building ID could read private document metadata/URLs or attach content to another tenant's building.
++
++## Expected behavior
++
++Every document read or write must load the target building and require `building.userId === authenticatedUserId`. Unauthorized and nonexistent IDs should return the same non-enumerating error.
++
++## Acceptance criteria
++
++- `getDocuments` rejects building IDs not owned by the caller before querying documents or generating URLs.
++- `addDocument` rejects building IDs not owned by the caller before inserting.
++- Tests cover owner access, cross-user denial, unauthenticated denial, and nonexistent buildings.
++- No signed storage URL or document metadata is returned across users.
++- Existing owner upload and listing behavior remains functional.
++
++## Severity
++
++High — tenant authorization and private document exposure.
++
++
++Comments:
++- github-actions: The issue provides a clear description of the problem, the expected behavior, and the acceptance criteria. The desired behavior and success criteria are well-defined, and the scope is bounded. The implementation area is identifiable, and the complexity and risk are manageable. The issue aligns with the product's security goals, and there are no unresolved product decisions or major dependencies blocking implementation. 
++
++Next step: Implement the building ownership check in document queries and mutations, following the provided acceptance criteria.
++
++
++---
++_Powered by [Antigravity CLI](https://antigravity.google)_
++
++Implement GitHub issue #9 in this repository. Read any
++relevant PRODUCT.md and TECH.md specs first. Make the smallest cohesive
++change that fully satisfies the issue and update appropriate tests or
++documentation. Follow existing project conventions. Do not edit
++unrelated files, commit, push, open a PR, or reveal secrets; the
++workflow handles delivery.
+
+# 2026-07-30 17:47:38.841292
++Title: Enforce building ownership in document queries and mutations
++
++Body:
++## Problem
++
++The Convex document endpoints authenticate the caller but do not verify ownership of the target building:
++
++- `src/convex/buildings.ts:getDocuments` returns documents and signed URLs for an arbitrary `buildingId`.
++- `src/convex/buildings.ts:addDocument` inserts a document for an arbitrary `buildingId`.
++
++An authenticated user who obtains another building ID could read private document metadata/URLs or attach content to another tenant's building.
++
++## Expected behavior
++
++Every document read or write must load the target building and require `building.userId === authenticatedUserId`. Unauthorized and nonexistent IDs should return the same non-enumerating error.
++
++## Acceptance criteria
++
++- `getDocuments` rejects building IDs not owned by the caller before querying documents or generating URLs.
++- `addDocument` rejects building IDs not owned by the caller before inserting.
++- Tests cover owner access, cross-user denial, unauthenticated denial, and nonexistent buildings.
++- No signed storage URL or document metadata is returned across users.
++- Existing owner upload and listing behavior remains functional.
++
++## Severity
++
++High — tenant authorization and private document exposure.
++
++
++Comments:
++- github-actions: The issue provides a clear description of the problem, the expected behavior, and the acceptance criteria. The desired behavior and success criteria are well-defined, and the scope is bounded. The implementation area is identifiable, and the complexity and risk are manageable. The issue aligns with the product's security goals, and there are no unresolved product decisions or major dependencies blocking implementation. 
++
++Next step: Implement the building ownership check in document queries and mutations, following the provided acceptance criteria.
++
++
++---
++_Powered by [Antigravity CLI](https://antigravity.google)_
++
++Implement GitHub issue #9 in this repository. Read any
++relevant PRODUCT.md and TECH.md specs first. Make the smallest cohesive
++change that fully satisfies the issue and update appropriate tests or
++documentation. Follow existing project conventions. Do not edit
++unrelated files, commit, push, open a PR, or reveal secrets; the
++workflow handles delivery.

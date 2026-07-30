@@ -178,6 +178,11 @@ export const getDocuments = query({
       throw new Error("Not authenticated");
     }
 
+    const building = await ctx.db.get(args.buildingId);
+    if (!building || building.userId !== userId) {
+      throw new Error("Building not found");
+    }
+
     const documents = await ctx.db
       .query("documents")
       .withIndex("by_building", (q) => q.eq("buildingId", args.buildingId))
@@ -292,6 +297,11 @@ export const addDocument = mutation({
     const userId = await getAuthUserId(ctx);
     if (!userId) {
       throw new Error("Not authenticated");
+    }
+
+    const building = await ctx.db.get(args.buildingId);
+    if (!building || building.userId !== userId) {
+      throw new Error("Building not found");
     }
 
     // Generate a random color for the document
