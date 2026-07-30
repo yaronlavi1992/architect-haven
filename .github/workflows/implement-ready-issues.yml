@@ -1,6 +1,6 @@
 name: Implement Ready Issues
 
-# Runs an OpenCode agent when an issue receives a ready-to-implement label.
+# Runs an Aider coding agent on Groq when an issue receives a ready-to-implement label.
 # The agent follows .agents/skills/implementation/SKILL.md to implement the issue,
 # open a pull request, and report progress back to the original issue.
 
@@ -31,7 +31,6 @@ jobs:
       actions: write # explicitly dispatch review after an agent-created PR
       contents: write # let the agent commit and push an implementation branch
       issues: write # let the agent post progress and final PR link comments
-      models: read # authenticate OpenCode against GitHub Models
       pull-requests: write # let the agent open the implementation PR
     steps:
       - name: Checkout repository
@@ -39,37 +38,85 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Install OpenCode
-        run: npm install --global opencode-ai@latest
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
 
-      - name: Implement issue with OpenCode
+      - name: Install Aider
+        run: python -m pip install --disable-pip-version-check aider-chat
+
+      - name: Implement issue with Aider on Groq
         id: implement
         env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           GH_TOKEN: ${{ github.token }}
           ISSUE_NUMBER: ${{ inputs.issue_number || github.event.issue.number }}
-          OPENCODE_CONFIG: ${{ github.workspace }}/.github/opencode-factory.json
           REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
+          if [ -z "${GROQ_API_KEY:-}" ]; then
+            echo "::error::GROQ_API_KEY is not configured."
+            exit 1
+          fi
 
-          opencode run --model github-models/gpt-4o-mini "
-          First read .agents/skills/implementation/SKILL.md and follow its
-          repository implementation workflow for GitHub issue #$ISSUE_NUMBER
-          in $REPO.
+          issue_json="$(gh issue view "$ISSUE_NUMBER" --repo "$REPO" \
+            --json title,body,comments,labels,url)"
+          title="$(jq -r '.title' <<<"$issue_json")"
+          slug="$(printf '%s' "$title" | tr '[:upper:]' '[:lower:]' |
+            sed -E 's/[^a-z0-9]+/-/g; s/^-|-$//g' | cut -c1-40)"
+          branch="factory/issue-${ISSUE_NUMBER}-${slug:-implementation}"
 
-          You are running non-interactively in GitHub Actions with GH_TOKEN
-          already authenticated. Fetch the complete issue and comments with gh.
-          Read any relevant PRODUCT.md and TECH.md specs before changing code.
-          Implement the smallest cohesive change, add or update tests where
-          appropriate, and run npm check, targeted tests, and npm run build.
-          Configure git user.name as github-actions[bot] and user.email as
-          github-actions[bot]@users.noreply.github.com. Create a descriptive
-          branch, commit only the intended files, push it, and open a pull
-          request against the default branch. The PR body must include
-          'Closes #$ISSUE_NUMBER' plus validation results. Finally, comment on
-          issue #$ISSUE_NUMBER with the real PR URL. Do not claim success unless
-          the PR exists. Do not expose secrets.
-          "
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$branch"
+
+          jq -r '
+            "Title: " + .title + "\n\nBody:\n" + (.body // "") +
+            "\n\nComments:\n" +
+            ((.comments // []) | map("- " + (.author.login // "unknown") + ": " + .body) | join("\n"))
+          ' <<<"$issue_json" > "$RUNNER_TEMP/issue.txt"
+
+          aider \
+            --model groq/llama-3.3-70b-versatile \
+            --yes-always \
+            --no-auto-commits \
+            --no-dirty-commits \
+            --map-tokens 2048 \
+            --message "$(cat "$RUNNER_TEMP/issue.txt")
+
+          Implement GitHub issue #$ISSUE_NUMBER in this repository. Read any
+          relevant PRODUCT.md and TECH.md specs first. Make the smallest cohesive
+          change that fully satisfies the issue and update appropriate tests or
+          documentation. Follow existing project conventions. Do not edit
+          unrelated files, commit, push, open a PR, or reveal secrets; the
+          workflow handles delivery."
+
+          if git diff --quiet; then
+            echo "::error::Aider completed without changing any files."
+            exit 1
+          fi
+
+          validation=()
+          npm ci
+          if npm run check; then validation+=("npm run check: passed"); else validation+=("npm run check: failed"); fi
+          if npm run build; then validation+=("npm run build: passed"); else validation+=("npm run build: failed"); fi
+
+          git add --all
+          git commit -m "fix: implement issue #$ISSUE_NUMBER"
+          git push --set-upstream origin "$branch"
+
+          {
+            printf 'Closes #%s\n\n' "$ISSUE_NUMBER"
+            printf '## Summary\n\nImplemented by the Groq-backed software factory.\n\n'
+            printf '## Validation\n\n'
+            printf -- '- %s\n' "${validation[@]}"
+          } > "$RUNNER_TEMP/pr-body.md"
+
+          pr_url="$(gh pr create --repo "$REPO" --base "${{ github.event.repository.default_branch || github.ref_name }}" \
+            --head "$branch" --title "$title" --body-file "$RUNNER_TEMP/pr-body.md")"
+          gh issue comment "$ISSUE_NUMBER" --repo "$REPO" \
+            --body "Implementation complete and ready for review: $pr_url"
 
       - name: Dispatch review for the implementation PR
         env:
