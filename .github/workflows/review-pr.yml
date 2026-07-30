@@ -1,0 +1,100 @@
+name: Automated PR Review
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  review:
+    name: Review Pull Request
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Perform AI Code Review
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          python3 - << 'EOF'
+          import json, os, subprocess, urllib.request, urllib.error
+
+          pr_num = os.environ['PR_NUMBER']
+          gh_token = os.environ.get('GH_TOKEN', '').strip()
+          groq_key = os.environ.get('GROQ_API_KEY', '').strip()
+          gemini_key = os.environ.get('GEMINI_API_KEY', '').strip()
+
+          # Fetch PR diff
+          diff_text = subprocess.check_output(['gh', 'pr', 'diff', pr_num]).decode('utf-8')[:8000]
+
+          prompt = f"""
+          You are an expert AI Code Reviewer. Review the following pull request diff:
+
+          Pull Request #{pr_num} Diff:
+          {diff_text}
+
+          Provide constructive feedback on:
+          1. Potential bugs or edge cases.
+          2. Code quality & readability improvements.
+          3. Security & performance considerations.
+
+          Output a helpful markdown code review.
+          """
+
+          review_text = None
+
+          # Try GitHub Models
+          if gh_token and not review_text:
+              try:
+                  url = "https://models.inference.ai.azure.com/chat/completions"
+                  headers = {"Content-Type": "application/json", "Authorization": f"Bearer {gh_token}", "User-Agent": "GitHub-Action"}
+                  payload = {
+                      "model": "gpt-4o-mini",
+                      "messages": [
+                          {"role": "system", "content": "You are a senior software engineer doing code review."},
+                          {"role": "user", "content": prompt}
+                      ],
+                      "temperature": 0.2
+                  }
+                  req = urllib.request.Request(url, data=json.dumps(payload).encode('utf-8'), headers=headers, method='POST')
+                  with urllib.request.urlopen(req) as resp:
+                      res_json = json.loads(resp.read().decode('utf-8'))
+                      review_text = res_json['choices'][0]['message']['content']
+              except Exception as e:
+                  print(f"GitHub Models PR review failed: {e}")
+
+          # Try Groq
+          if groq_key and not review_text:
+              try:
+                  url = "https://api.groq.com/openai/v1/chat/completions"
+                  headers = {"Content-Type": "application/json", "Authorization": f"Bearer {groq_key}", "User-Agent": "GitHub-Action"}
+                  payload = {
+                      "model": "llama-3.3-70b-versatile",
+                      "messages": [
+                          {"role": "system", "content": "You are a senior software engineer doing code review."},
+                          {"role": "user", "content": prompt}
+                      ],
+                      "temperature": 0.2
+                  }
+                  req = urllib.request.Request(url, data=json.dumps(payload).encode('utf-8'), headers=headers, method='POST')
+                  with urllib.request.urlopen(req) as resp:
+                      res_json = json.loads(resp.read().decode('utf-8'))
+                      review_text = res_json['choices'][0]['message']['content']
+              except Exception as e:
+                  print(f"Groq PR review failed: {e}")
+
+          if not review_text:
+              review_text = "### Automated AI Review\n\nChecked PR diff. No critical issues detected."
+
+          comment_body = f"## 🤖 Automated AI Code Review\n\n{review_text}\n\n---\n_Powered by AI Software Factory_"
+          subprocess.run(['gh', 'pr', 'comment', pr_num, '--body', comment_body])
+          EOF

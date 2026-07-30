@@ -29,29 +29,109 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install Antigravity CLI (agy)
-        run: |
-          npm install -g @google/antigravity-cli || curl -fsSL https://antigravity.google/install.sh | sh || true
-
-      - name: Spec issue with Antigravity agent
+      - name: Spec issue with AI Agent
         id: spec
         env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
         run: |
-          set -euo pipefail
+          python3 - << 'EOF'
+          import json, os, re, subprocess, urllib.request, urllib.error
 
-          agy --dangerously-skip-permissions -p \
-            "Create checked-in product and technical specs for the GitHub issue that was just labeled ready to spec following .agents/skills/spec/SKILL.md.
+          issue_num = os.environ['ISSUE_NUMBER']
+          gh_token = os.environ.get('GH_TOKEN', '').strip()
+          groq_key = os.environ.get('GROQ_API_KEY', '').strip()
+          gemini_key = os.environ.get('GEMINI_API_KEY', '').strip()
 
-            - Repository: ${{ github.repository }}
-            - Issue number: #${{ github.event.issue.number }}
-            - Issue URL: ${{ github.event.issue.html_url }}
-            - Applied label: ${{ github.event.label.name }}
+          # 1. Fetch issue details
+          issue_raw = subprocess.check_output(['gh', 'issue', 'view', issue_num, '--json', 'title,body,comments']).decode('utf-8')
+          issue_data = json.loads(issue_raw)
+          title = issue_data.get('title', 'issue')
+          slug = re.sub(r'[^a-z0-9]+', '-', title.lower()).strip('-')[:30]
 
-            Follow the spec skill: fetch the full issue and comments with the authenticated `gh` CLI, read `roadmap.md` and `vision.md` if present, inspect this checked-out codebase, and create:
-            - `specs/<issue-slug>/PRODUCT.md`
-            - `specs/<issue-slug>/TECH.md`
+          prompt = f"""
+          You are a Product & Technical Specification Agent.
+          Create detailed product (PRODUCT.md) and technical (TECH.md) specs for the following issue:
 
-            Create a specs branch, commit the spec files, push the branch, and open a GitHub pull request for review. Post status comments as directed by the skill."
+          Issue Title: {title}
+          Issue Body: {issue_data.get('body', '')}
+
+          Return ONLY a raw JSON object with keys:
+          {{
+            "product_spec": "# Product Spec for {title}\\n\\n## Overview\\n...\\n\\n## User Stories\\n...",
+            "tech_spec": "# Technical Spec for {title}\\n\\n## Architecture\\n...\\n\\n## Implementation Steps\\n..."
+          }}
+          """
+
+          res_json = None
+
+          # Try GitHub Models
+          if gh_token and not res_json:
+              try:
+                  url = "https://models.inference.ai.azure.com/chat/completions"
+                  headers = {"Content-Type": "application/json", "Authorization": f"Bearer {gh_token}", "User-Agent": "GitHub-Action"}
+                  payload = {
+                      "model": "gpt-4o-mini",
+                      "response_format": {"type": "json_object"},
+                      "messages": [{"role": "system", "content": "You output JSON only."}, {"role": "user", "content": prompt}],
+                      "temperature": 0.1
+                  }
+                  req = urllib.request.Request(url, data=json.dumps(payload).encode('utf-8'), headers=headers, method='POST')
+                  with urllib.request.urlopen(req) as resp:
+                      res_json = json.loads(json.loads(resp.read().decode('utf-8'))['choices'][0]['message']['content'])
+              except Exception as e:
+                  print(f"GitHub Models spec call failed: {e}")
+
+          # Try Groq
+          if groq_key and not res_json:
+              try:
+                  url = "https://api.groq.com/openai/v1/chat/completions"
+                  headers = {"Content-Type": "application/json", "Authorization": f"Bearer {groq_key}", "User-Agent": "GitHub-Action"}
+                  payload = {
+                      "model": "llama-3.3-70b-versatile",
+                      "response_format": {"type": "json_object"},
+                      "messages": [{"role": "system", "content": "You output JSON only."}, {"role": "user", "content": prompt}],
+                      "temperature": 0.1
+                  }
+                  req = urllib.request.Request(url, data=json.dumps(payload).encode('utf-8'), headers=headers, method='POST')
+                  with urllib.request.urlopen(req) as resp:
+                      res_json = json.loads(json.loads(resp.read().decode('utf-8'))['choices'][0]['message']['content'])
+              except Exception as e:
+                  print(f"Groq spec call failed: {e}")
+
+          if not res_json:
+              raise RuntimeError("Could not generate specs with available AI providers.")
+
+          spec_dir = f"specs/{slug}"
+          os.makedirs(spec_dir, exist_ok=True)
+
+          with open(f"{spec_dir}/PRODUCT.md", "w") as f:
+              f.write(res_json.get("product_spec", "# Product Spec"))
+
+          with open(f"{spec_dir}/TECH.md", "w") as f:
+              f.write(res_json.get("tech_spec", "# Tech Spec"))
+
+          branch_name = f"spec/issue-{issue_num}-{slug}"
+          subprocess.run(["git", "config", "user.name", "github-actions[bot]"], check=True)
+          subprocess.run(["git", "config", "user.email", "github-actions[bot]@users.noreply.github.com"], check=True)
+          subprocess.run(["git", "checkout", "-b", branch_name], check=True)
+          subprocess.run(["git", "add", spec_dir], check=True)
+          subprocess.run(["git", "commit", "-m", f"docs: add PRODUCT.md and TECH.md specs for issue #{issue_num}"], check=True)
+          subprocess.run(["git", "push", "origin", branch_name], check=True)
+
+          pr_out = subprocess.check_output([
+              "gh", "pr", "create",
+              "--title", f"Specs: {title}",
+              "--body", f"Automated specs for issue #{issue_num}.\\n\\nContains `PRODUCT.md` and `TECH.md` under `{spec_dir}/`.",
+              "--head", branch_name,
+              "--base", "master"
+          ]).decode('utf-8').strip()
+
+          subprocess.run([
+              "gh", "issue", "comment", issue_num,
+              "--body", f"Created specifications PR for review: {pr_out}"
+          ])
+          EOF
 
