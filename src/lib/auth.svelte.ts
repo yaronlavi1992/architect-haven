@@ -56,21 +56,20 @@ class AuthController {
   client = $state<ConvexClient | null>(null);
   refreshPromise: Promise<string | null> | null = null;
 
+  applyClientAuth() {
+    this.client?.setAuth(
+      ({ forceRefreshToken }) => this.fetchAccessToken(forceRefreshToken),
+      async (authenticated) => {
+        this.isAuthenticated = authenticated;
+      },
+    );
+  }
+
   initialize(client: ConvexClient) {
     if (!browser) return;
     if (this.client === client && this.initialized) return;
 
     this.client = client;
-    client.setAuth(
-      ({ forceRefreshToken }) => this.fetchAccessToken(forceRefreshToken),
-      async (authenticated) => {
-        this.isAuthenticated = authenticated;
-        if (!authenticated) {
-          this.token = null;
-        }
-      },
-    );
-
     window.addEventListener("storage", this.handleStorage);
     void this.finishInitialization();
   }
@@ -85,6 +84,11 @@ class AuthController {
 
     this.token = event.newValue;
     this.isAuthenticated = !!event.newValue;
+    if (event.newValue) {
+      this.applyClientAuth();
+    } else {
+      this.client?.client.clearAuth();
+    }
   };
 
   async finishInitialization() {
@@ -98,6 +102,7 @@ class AuthController {
       const token = readStorage(JWT_STORAGE_KEY);
       this.token = token;
       this.isAuthenticated = !!token;
+      this.applyClientAuth();
     }
 
     this.isLoading = false;
@@ -125,6 +130,10 @@ class AuthController {
         writeStorage(REFRESH_TOKEN_STORAGE_KEY, tokens.refreshToken);
       }
     }
+
+    // Re-register the token provider after an auth exchange so the live
+    // Convex websocket immediately adopts the new identity.
+    this.applyClientAuth();
   }
 
   async refreshWithToken(refreshToken: string) {
