@@ -16,5 +16,13 @@
   });
 </script>
 
+<svelte:head>
+  <title>Architect Haven</title>
+  <meta
+    name="description"
+    content="Create, manage, and share interactive 3D building models."
+  />
+</svelte:head>
+
 <ToastViewport />
 {@render children()}

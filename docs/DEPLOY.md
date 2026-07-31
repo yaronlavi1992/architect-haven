@@ -2,20 +2,18 @@
 
 ## Vercel (frontend)
 
-Pushes to GitHub do **not** deploy automatically until the repo is connected in Vercel and the production branch matches.
+The GitHub repository is connected to the Vercel project and deploys from
+`master`.
 
-1. **Connect the repo**
-   - [Vercel Dashboard](https://vercel.com/dashboard) → Add New → Project → Import `yaronlavi1992/architect-haven-vite`.
-   - Authorize GitHub if prompted.
+Build settings are committed in `vercel.json`:
 
-2. **Set production branch to `master`**
-   - This repo uses `master`, not `main`. In the project: **Settings → Git → Production Branch** → choose **master** (or type it).
-   - Otherwise pushes to `master` only create previews and production never updates.
+- Install: `pnpm install --frozen-lockfile`
+- Build: `pnpm build`
+- Runtime adapter: `@sveltejs/adapter-vercel`
 
-3. **Build settings** (usually auto-detected)
-   - Build Command: `npm run build` or `vite build`
-   - Output Directory: `dist`
-   - Install Command: `npm install` (or `bun install` if you use Bun)
+`PUBLIC_CONVEX_URL` must exist in Production, Preview, and Development. Keep
+the Convex provider credentials and Stripe secrets in the Convex deployment,
+not in client-visible Vercel variables.
 
 After this, every push to `master` will trigger a production deployment.
 
@@ -24,9 +22,8 @@ After this, every push to `master` will trigger a production deployment.
 Deploy backend separately:
 
 ```bash
-npx convex deploy
+pnpm convex deploy
 ```
 
-## Optional: GitHub Actions CI
-
-The repo includes a workflow (`.github/workflows/ci.yml`) that runs build on push to `master`. This verifies the app builds; it does not replace Vercel. Deploys are still done by Vercel’s Git integration once the project is connected.
+Use `mise install` to install the pinned Node.js and pnpm versions before
+running deployment commands locally.

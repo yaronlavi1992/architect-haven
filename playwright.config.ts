@@ -1,7 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
 
 const baseURL = process.env.BASE_URL ?? "http://localhost:5173";
-// Prod: BASE_URL=https://architecthaven-3dbuildingmodelingap.vercel.app npm run test:e2e
+// Prod: BASE_URL=https://architecthaven-3dbuildingmodelingap.vercel.app pnpm test:e2e
 
 export default defineConfig({
   testDir: "./e2e",
@@ -19,7 +19,7 @@ export default defineConfig({
   webServer: process.env.CI
     ? undefined
     : {
-        command: "npm run dev",
+        command: "pnpm dev",
         url: baseURL,
         reuseExistingServer: !process.env.CI,
         timeout: 60_000,

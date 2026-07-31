@@ -2,7 +2,8 @@
 
 ## Frontend
 
-Deploy the SvelteKit app to your chosen platform and set:
+Vercel builds the SvelteKit app with the Vercel adapter. Set this variable in
+the Production, Preview, and Development scopes:
 
 - `PUBLIC_CONVEX_URL=https://your-deployment.convex.cloud`
 
@@ -15,4 +16,5 @@ Set Convex environment variables as needed:
 - `STRIPE_WEBHOOK_SECRET`
 - auth provider secrets such as Google client credentials
 
-Use `npx convex dev` for local development and `npx convex deploy --cmd 'npm run build' --cmd-url-env-var-name PUBLIC_CONVEX_URL` for production builds.
+Use `pnpm convex dev` for local development and `pnpm convex deploy` to deploy
+backend changes. The frontend is deployed separately by Vercel.

@@ -2,6 +2,10 @@
   "name": "architect-haven",
   "private": true,
   "version": "0.0.0",
+  "packageManager": "pnpm@11.18.0",
+  "engines": {
+    "node": "24.x"
+  },
   "type": "module",
   "scripts": {
     "dev": "npm-run-all --parallel dev:frontend dev:backend",
@@ -9,7 +13,7 @@
     "dev:backend": "convex dev",
     "build": "vite build",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
-    "lint": "npm run check && convex dev --once && vite build",
+    "lint": "pnpm check && convex dev --once && pnpm build",
     "preview": "vite preview",
     "test:e2e": "playwright test",
     "test:e2e:prod": "playwright test"
@@ -27,7 +31,7 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.58.2",
-    "@sveltejs/adapter-auto": "^7.0.1",
+    "@sveltejs/adapter-vercel": "^6.2.0",
     "@sveltejs/kit": "^2.56.1",
     "@sveltejs/vite-plugin-svelte": "^6.2.4",
     "@types/node": "^22.13.10",
