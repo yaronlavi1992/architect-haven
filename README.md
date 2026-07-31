@@ -1,23 +1,28 @@
-# Architect Haven
+# Emergence
 
-Architect Haven is a 3D building modeling application that utilizes SvelteKit 2 and Svelte 5, backed by Convex for data management.
+Emergence is a spatial AI laboratory: users design 3D grid worlds, deploy autonomous agents, inspect their decisions, replay deterministic simulations, evolve strategies, and publish spectator links.
 
-## Structure
+## Stack
 
-- Frontend: `src/routes`, `src/lib`, `src/app.css`
-- Convex backend: `src/convex`
+- SvelteKit 2 and Svelte 5
+- Three.js world rendering
+- Convex persistence, realtime queries, and authentication
+- Vercel deployment
+- Playwright end-to-end tests
 
-Install the pinned Node.js and pnpm versions with `mise install`, then run
-`pnpm install` and `pnpm dev`. The dev command starts the SvelteKit frontend
-and Convex dev server together.
+## Local development
 
-## Convex
+```bash
+mise install
+pnpm install
+pnpm dev
+```
 
-This app uses `convex-svelte` on the client and Convex Auth for password, Google, and anonymous sign-in.
+`pnpm dev` starts both the SvelteKit frontend and Convex development process. Use `pnpm check`, `pnpm build`, and `pnpm test:e2e` before deployment.
 
-The active Convex functions directory is configured in `convex.json`.
+## Product areas
 
-## Build
-
-- `pnpm check`
-- `pnpm build`
+- `/arenas` — persistent world library
+- `/arenas/:id` — 3D editor, simulator, replay, evolution, and live cognition
+- `/leaderboard` — recorded tournament runs
+- `/spectate/:token` — public realtime spectator experience

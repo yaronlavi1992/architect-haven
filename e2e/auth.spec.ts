@@ -41,34 +41,21 @@ test.describe("Auth", () => {
     ).toBeVisible({ timeout: 5000 });
   });
 
-  test("a newly authenticated session can create a building", async ({
+  test("a newly authenticated session can create an arena", async ({
     page,
   }) => {
     await page.goto("/auth");
     await page.getByRole("button", { name: /Sign in anonymously/i }).click();
     await expect(page).toHaveURL(/\/dashboard/, { timeout: 15000 });
 
-    await page.goto("/buildings");
-    await page
-      .getByRole("button", {
-        name: /Create Building|Create Your First Building/,
-      })
-      .first()
-      .click();
-    await page
-      .getByLabel("Building Name")
-      .fill("Authentication regression test");
-    await page.getByRole("button", { name: "Save", exact: true }).click();
+    await page.goto("/arenas");
+    await page.getByRole("button", { name: /New arena/i }).click();
+    await page.getByLabel("Arena name").fill("Authentication regression test");
+    await page.getByRole("button", { name: "Enter world" }).click();
 
-    await expect(
-      page.getByText("Authentication regression test"),
-    ).toBeVisible();
-    await page
-      .getByRole("button", { name: "Delete Authentication regression test" })
-      .click();
-    await page.getByRole("button", { name: "Delete", exact: true }).click();
-    await expect(
-      page.getByText("Authentication regression test"),
-    ).not.toBeVisible();
+    await expect(page.getByLabel("Arena title")).toHaveValue(
+      "Authentication regression test",
+    );
+    await expect(page.getByRole("button", { name: "Simulate" })).toBeVisible();
   });
 });

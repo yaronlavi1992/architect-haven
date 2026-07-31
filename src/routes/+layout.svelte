@@ -17,10 +17,10 @@
 </script>
 
 <svelte:head>
-  <title>Architect Haven</title>
+  <title>Emergence — AI World Laboratory</title>
   <meta
     name="description"
-    content="Create, manage, and share interactive 3D building models."
+    content="Build 3D worlds, train autonomous agents, and watch intelligence emerge."
   />
 </svelte:head>
 

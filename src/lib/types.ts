@@ -52,3 +52,45 @@ export type PlansPayload = {
     pro?: PlanDetails;
   };
 };
+
+export type CellType = "wall" | "food" | "hazard" | "goal";
+export type BrainType = "explorer" | "collector" | "survivor" | "seeker";
+
+export type ArenaCell = { x: number; z: number; type: CellType };
+export type ArenaAgent = {
+  name: string;
+  color: string;
+  brain: BrainType;
+  x: number;
+  z: number;
+};
+
+export type ArenaRecord = {
+  _id: string;
+  name: string;
+  description: string;
+  width: number;
+  height: number;
+  cells: ArenaCell[];
+  agents: ArenaAgent[];
+  shareToken?: string;
+  bestScore?: number;
+  createdAt: number;
+  updatedAt: number;
+};
+
+export type SimAgent = ArenaAgent & {
+  id: string;
+  energy: number;
+  score: number;
+  alive: boolean;
+  thought: string;
+  visits: Record<string, number>;
+};
+
+export type SimFrame = {
+  tick: number;
+  agents: SimAgent[];
+  food: string[];
+  events: string[];
+};

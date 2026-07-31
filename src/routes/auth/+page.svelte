@@ -70,9 +70,10 @@
   <div class="flex min-h-screen items-center justify-center bg-gray-50">
     <div class="w-full max-w-md">
       <div class="mb-8 text-center">
-        <h1 class="font-display mb-2 text-3xl font-bold text-gray-900">Welcome to Architect Haven</h1>
+        <p class="mb-3 text-xs font-bold uppercase tracking-[0.25em] text-violet-600">Emergence</p>
+        <h1 class="font-display mb-2 text-3xl font-bold text-gray-900">Enter the world laboratory</h1>
         <p class="text-gray-600">
-          {flow === "signIn" ? "Sign in to access your 3D building models" : "Create your account"}
+          {flow === "signIn" ? "Sign in to continue your experiments" : "Create your trainer account"}
         </p>
       </div>
 

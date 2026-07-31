@@ -7,16 +7,16 @@ export const PLANS = {
     name: "Free Plan",
     buildingLimit: FREE_LIMIT,
     priceDisplay: "$0",
-    features: ["Up to 5 buildings", "3D visualization", "Document management"],
+    features: ["5 saved worlds", "3D simulation", "Deterministic replays"],
   },
   pro: {
     name: "Pro Plan",
     buildingLimit: null as number | null,
     priceDisplay: "$20",
     features: [
-      "Unlimited buildings",
-      "3D visualization",
-      "Document management",
+      "Unlimited worlds",
+      "Evolution tournaments",
+      "Private spectator rooms",
     ],
   },
 } as const;

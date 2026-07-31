@@ -9,11 +9,11 @@ export default defineConfig({
       registerType: "autoUpdate",
       includeAssets: ["favicon.ico", "mask-icon.svg", "logo.png"],
       manifest: {
-        name: "Architect Haven",
-        short_name: "Architect Haven",
-        description: "3D building modeling app",
-        theme_color: "#111827",
-        background_color: "#f9fafb",
+        name: "Emergence — AI World Laboratory",
+        short_name: "Emergence",
+        description: "Build 3D worlds and train autonomous agents",
+        theme_color: "#070b18",
+        background_color: "#070b18",
         icons: [
           { src: "pwa-192x192.png", sizes: "192x192", type: "image/png" },
           { src: "pwa-512x512.png", sizes: "512x512", type: "image/png" },

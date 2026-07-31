@@ -3,6 +3,59 @@ import { v } from "convex/values";
 import { authTables } from "@convex-dev/auth/server";
 
 const applicationTables = {
+  arenas: defineTable({
+    name: v.string(),
+    description: v.string(),
+    width: v.number(),
+    height: v.number(),
+    cells: v.array(
+      v.object({
+        x: v.number(),
+        z: v.number(),
+        type: v.union(
+          v.literal("wall"),
+          v.literal("food"),
+          v.literal("hazard"),
+          v.literal("goal"),
+        ),
+      }),
+    ),
+    agents: v.array(
+      v.object({
+        name: v.string(),
+        color: v.string(),
+        brain: v.union(
+          v.literal("explorer"),
+          v.literal("collector"),
+          v.literal("survivor"),
+          v.literal("seeker"),
+        ),
+        x: v.number(),
+        z: v.number(),
+      }),
+    ),
+    userId: v.id("users"),
+    shareToken: v.optional(v.string()),
+    bestScore: v.optional(v.number()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_share_token", ["shareToken"]),
+
+  simulationRuns: defineTable({
+    arenaId: v.id("arenas"),
+    userId: v.id("users"),
+    score: v.number(),
+    ticks: v.number(),
+    survivors: v.number(),
+    generation: v.number(),
+    createdAt: v.number(),
+  })
+    .index("by_arena", ["arenaId"])
+    .index("by_score", ["score"])
+    .index("by_user", ["userId"]),
+
   buildings: defineTable({
     name: v.string(),
     sections: v.array(

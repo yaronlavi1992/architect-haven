@@ -17,8 +17,8 @@
   const planFeatures = $derived(
     plan?.features ??
       (isPro
-        ? ["Unlimited buildings", "3D visualization", "Document management"]
-        : ["Up to 5 buildings", "3D visualization", "Document management"]),
+        ? ["Unlimited worlds", "Evolution tournaments", "Private spectator rooms"]
+        : ["5 saved worlds", "3D simulation", "Deterministic replays"]),
   );
 
   async function handleManageSubscription() {
@@ -58,7 +58,7 @@
           {plan?.name ?? (isPro ? "Pro Plan" : "Free Plan")}
         </h3>
         <p class={`text-sm ${isPro ? "text-indigo-600" : "text-green-600"}`}>
-          {plan?.buildingLimit != null ? `Up to ${plan.buildingLimit} buildings` : "Unlimited buildings"}
+          {isPro ? "Unlimited worlds and tournament runs" : "Explore the core AI gym"}
         </p>
       </div>
 
@@ -93,7 +93,7 @@
       <p class="mb-3 text-sm text-blue-600">
         {isPro
           ? "Update payment method or cancel subscription"
-          : `Get unlimited buildings for ${plansQuery.data?.proPriceDisplay ?? "$20"}/month`}
+          : `Unlock unlimited worlds for ${plansQuery.data?.proPriceDisplay ?? "$20"}/month`}
       </p>
       <button
         type="button"

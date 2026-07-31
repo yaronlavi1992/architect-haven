@@ -3,27 +3,27 @@ import { test, expect } from "@playwright/test";
 test.describe("Navigation", () => {
   test("landing page loads and shows hero + Sign In link", async ({ page }) => {
     await page.goto("/");
-    await expect(page).toHaveTitle(/Architect Haven/);
+    await expect(page).toHaveTitle(/Emergence/);
     await expect(
-      page.getByRole("link", { name: /Sign In/i }).first(),
+      page.getByRole("link", { name: /Enter the lab/i }).first(),
     ).toBeVisible();
     await expect(page.getByRole("heading", { level: 1 })).toContainText(
-      /3D Modeling Tool/,
+      /Build worlds/,
     );
     await expect(
-      page.getByRole("link", { name: /Start Building Models For Free/i }),
+      page.getByRole("link", { name: /Create your first world/i }),
     ).toBeVisible();
   });
 
   test("Sign In link goes to /auth", async ({ page }) => {
     await page.goto("/");
     await page
-      .getByRole("link", { name: /Sign In/i })
+      .getByRole("link", { name: /Enter the lab/i })
       .first()
       .click();
     await expect(page).toHaveURL(/\/auth/);
     await expect(
-      page.getByRole("heading", { name: /Welcome to Architect Haven/i }),
+      page.getByRole("heading", { name: /Enter the world laboratory/i }),
     ).toBeVisible();
   });
 
@@ -38,6 +38,13 @@ test.describe("Navigation", () => {
     page,
   }) => {
     await page.goto("/buildings");
+    await expect(page).toHaveURL(/\/auth/);
+  });
+
+  test("unauthenticated visit to /arenas redirects to /auth", async ({
+    page,
+  }) => {
+    await page.goto("/arenas");
     await expect(page).toHaveURL(/\/auth/);
   });
 

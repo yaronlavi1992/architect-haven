@@ -13,20 +13,20 @@ test.describe("Sidebar navigation (authenticated)", () => {
       page.getByRole("link", { name: /Dashboard/i }).first(),
     ).toBeVisible();
     await page
-      .getByRole("link", { name: /Buildings/i })
+      .getByRole("link", { name: /Arenas/i })
       .first()
       .click();
-    await expect(page).toHaveURL(/\/buildings/);
+    await expect(page).toHaveURL(/\/arenas/);
   });
 
-  test("Buildings link goes to /buildings", async ({ page }) => {
+  test("Arenas link goes to /arenas", async ({ page }) => {
     await page
-      .getByRole("link", { name: /Buildings/i })
+      .getByRole("link", { name: /Arenas/i })
       .first()
       .click();
-    await expect(page).toHaveURL(/\/buildings/);
+    await expect(page).toHaveURL(/\/arenas/);
     await expect(
-      page.getByRole("heading", { name: /Your Buildings/i }),
+      page.getByRole("heading", { name: /Your arenas/i }),
     ).toBeVisible();
   });
 
@@ -41,13 +41,12 @@ test.describe("Sidebar navigation (authenticated)", () => {
     ).toBeVisible();
   });
 
-  test("direct /buildings/:id without valid id still loads app", async ({
+  test("leaderboard is available to authenticated trainers", async ({
     page,
   }) => {
-    await page.goto("/buildings/non-existent-id");
-    await expect(page).toHaveURL(/\/buildings\/non-existent-id/);
-    await page.waitForTimeout(2000);
-    const body = await page.locator("body").textContent();
-    expect(body).toBeTruthy();
+    await page.goto("/leaderboard");
+    await expect(
+      page.getByRole("heading", { name: /Hall of emergence/i }),
+    ).toBeVisible();
   });
 });

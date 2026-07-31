@@ -13,7 +13,8 @@
 
   const navigation = [
     { name: "Dashboard", href: "/dashboard", icon: "dashboard" },
-    { name: "Buildings", href: "/buildings", icon: "buildings" },
+    { name: "Arenas", href: "/arenas", icon: "buildings" },
+    { name: "Leaderboard", href: "/leaderboard", icon: "leaderboard" },
     { name: "Settings", href: "/settings", icon: "settings" },
   ];
 
@@ -78,6 +79,8 @@
           "M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065",
           "M15 12a3 3 0 11-6 0 3 3 0 016 0z",
         ];
+      case "leaderboard":
+        return ["M8 21h8m-4-4v4M7 4h10v4a5 5 0 01-10 0V4zm0 2H4v2a3 3 0 003 3m10-5h3v2a3 3 0 01-3 3"];
       default:
         return [];
     }
@@ -104,7 +107,7 @@
   }`}
 >
   <div class="flex min-h-[57px] flex-shrink-0 items-center pl-14 pr-4 pt-2">
-    <h1 class="font-display text-xl font-bold">Architect Haven</h1>
+    <h1 class="font-display text-xl font-bold">EMERGENCE</h1>
   </div>
 
   <nav class="flex-1 px-4">
@@ -147,7 +150,7 @@
   ></button>
   <aside class="fixed inset-y-0 left-0 z-[95] flex w-64 flex-col bg-[#111827] text-white md:hidden">
     <div class="p-6">
-      <h1 class="font-display text-xl font-bold">Architect Haven</h1>
+      <h1 class="font-display text-xl font-bold">EMERGENCE</h1>
     </div>
 
     <nav class="flex-1 px-4">

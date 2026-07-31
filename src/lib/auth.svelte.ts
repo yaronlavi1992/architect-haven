@@ -109,7 +109,11 @@ class AuthController {
     this.initialized = true;
   }
 
-  async setTokens(tokens: StoredTokens, shouldStore = true) {
+  async setTokens(
+    tokens: StoredTokens,
+    shouldStore = true,
+    shouldApplyClientAuth = true,
+  ) {
     if (tokens === null) {
       this.token = null;
       this.isAuthenticated = false;
@@ -133,7 +137,7 @@ class AuthController {
 
     // Re-register the token provider after an auth exchange so the live
     // Convex websocket immediately adopts the new identity.
-    this.applyClientAuth();
+    if (shouldApplyClientAuth) this.applyClientAuth();
   }
 
   async refreshWithToken(refreshToken: string) {
@@ -144,7 +148,7 @@ class AuthController {
     });
 
     if ("tokens" in result) {
-      await this.setTokens(result.tokens ?? null);
+      await this.setTokens(result.tokens ?? null, true, false);
       return this.token;
     }
 

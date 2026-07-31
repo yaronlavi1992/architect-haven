@@ -2,141 +2,20 @@
   import { goto } from "$app/navigation";
   import { auth } from "$lib/auth.svelte";
   import LoadingSpinner from "$lib/components/LoadingSpinner.svelte";
-
-  const texts = ["Architects.", "Consultants.", "Managers.", "Engineers."];
-
-  let currentText = $state("");
-  let currentIndex = $state(0);
-  let isDeleting = $state(false);
-
-  const testimonials = [
-    {
-      name: "Sarah Johnson",
-      role: "Senior Architect",
-      company: "Urban Design Co.",
-      text: "Architect Haven has revolutionized how we present building concepts to clients. The 3D visualization is incredible.",
-      avatar: "SJ",
-    },
-    {
-      name: "Michael Chen",
-      role: "Construction Manager",
-      company: "BuildTech Solutions",
-      text: "The document management system keeps all our project files organized and easily accessible. Game changer!",
-      avatar: "MC",
-    },
-    {
-      name: "Emily Rodriguez",
-      role: "Design Consultant",
-      company: "Modern Spaces",
-      text: "Being able to share interactive 3D models with stakeholders has improved our collaboration tremendously.",
-      avatar: "ER",
-    },
-    {
-      name: "David Park",
-      role: "Project Engineer",
-      company: "Structural Innovations",
-      text: "The apartment-level detail and document attachment features are exactly what we needed for complex projects.",
-      avatar: "DP",
-    },
-  ];
-
-  $effect(() => {
-    if (auth.isLoading || auth.isAuthenticated) return;
-
-    const timeout = window.setTimeout(
-      () => {
-        const current = texts[currentIndex];
-        if (isDeleting) {
-          currentText = current.slice(0, Math.max(currentText.length - 1, 0));
-          if (currentText === "") {
-            isDeleting = false;
-            currentIndex = (currentIndex + 1) % texts.length;
-          }
-        } else {
-          currentText = current.slice(0, currentText.length + 1);
-          if (currentText === current) {
-            window.setTimeout(() => {
-              isDeleting = true;
-            }, 2000);
-          }
-        }
-      },
-      isDeleting ? 50 : 100,
-    );
-
-    return () => window.clearTimeout(timeout);
-  });
-
-  $effect(() => {
-    if (!auth.isLoading && auth.isAuthenticated) {
-      goto("/dashboard", { replaceState: true });
-    }
-  });
+  $effect(() => { if (!auth.isLoading && auth.isAuthenticated) goto("/dashboard", { replaceState: true }); });
 </script>
 
-{#if auth.isLoading}
-  <LoadingSpinner fullScreen />
-{:else}
-  <div class="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-gray-800">
-    <nav class="flex items-center justify-between p-6">
-      <div class="font-display text-2xl font-bold text-white">Architect Haven</div>
-      <a
-        href="/auth"
-        class="rounded-lg bg-white px-6 py-2 font-semibold text-gray-900 transition-colors hover:bg-gray-100"
-      >
-        Sign In
-      </a>
-    </nav>
-
-    <div class="flex flex-col items-center justify-center px-6 py-20 text-center">
-      <h1 class="font-display mb-6 text-5xl font-bold text-white md:text-7xl">
-        The Best 3D Modeling Tool for
-        <span class="text-blue-400">
-          {currentText}
-          <span class="animate-pulse">|</span>
-        </span>
-      </h1>
-
-      <p class="mb-12 max-w-3xl text-xl text-gray-300 md:text-2xl">
-        Bridging the gap between Architects and Advisors.
-      </p>
-
-      <a
-        href="/auth"
-        class="rounded-lg bg-green-500 px-8 py-4 text-xl font-semibold text-white shadow-lg transition-colors hover:bg-green-600 hover:shadow-xl"
-      >
-        Start Building Models For Free
-      </a>
-    </div>
-
-    <div class="px-6 py-20">
-      <h2 class="font-display mb-16 text-center text-4xl font-bold text-white">
-        Trusted by Industry Leaders
-      </h2>
-
-      <div class="mx-auto grid max-w-6xl grid-cols-1 gap-8 md:grid-cols-2">
-        {#each testimonials as testimonial}
-          <div class="rounded-xl bg-[#192339] p-8 shadow-lg transition-shadow hover:shadow-xl">
-            <div class="mb-4 flex items-center">
-              <div class="mr-4 flex h-12 w-12 items-center justify-center rounded-full bg-blue-500 font-bold text-white">
-                {testimonial.avatar}
-              </div>
-
-              <div>
-                <h3 class="font-semibold text-white">{testimonial.name}</h3>
-                <p class="text-sm text-gray-400">{testimonial.role}</p>
-                <p class="text-sm text-gray-500">{testimonial.company}</p>
-              </div>
-            </div>
-
-            <p class="leading-relaxed text-gray-300">"{testimonial.text}"</p>
-          </div>
-        {/each}
-      </div>
-    </div>
-
-    <footer class="py-8 text-center text-gray-400">
-      <p>&copy; 2024 Architect Haven. All rights reserved.</p>
-    </footer>
+{#if auth.isLoading}<LoadingSpinner fullScreen />{:else}
+  <div class="min-h-screen overflow-hidden bg-[#060914] text-white">
+    <nav class="relative z-10 mx-auto flex max-w-7xl items-center justify-between px-6 py-6"><a href="/" class="font-display text-xl font-black tracking-[0.25em]">EMERGENCE</a><div class="flex items-center gap-5"><a href="#how" class="hidden text-sm font-semibold text-slate-400 hover:text-white sm:block">How it works</a><a href="/auth" class="rounded-xl border border-white/15 px-5 py-2.5 text-sm font-bold hover:bg-white/10">Enter the lab</a></div></nav>
+    <main>
+      <section class="relative mx-auto flex min-h-[82vh] max-w-7xl items-center px-6 py-20">
+        <div class="absolute -right-40 top-0 size-[650px] rounded-full bg-violet-700/20 blur-[120px]"></div><div class="absolute -left-40 bottom-0 size-[500px] rounded-full bg-cyan-600/15 blur-[120px]"></div>
+        <div class="relative z-10 max-w-4xl"><div class="mb-7 inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-400/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.22em] text-cyan-300"><span class="size-2 animate-pulse rounded-full bg-cyan-300"></span> Spatial intelligence playground</div><h1 class="font-display text-6xl font-black leading-[0.95] tracking-tight sm:text-7xl lg:text-8xl">Build worlds.<br /><span class="bg-gradient-to-r from-violet-400 via-fuchsia-400 to-cyan-300 bg-clip-text text-transparent">Train minds.</span><br />Watch them emerge.</h1><p class="mt-8 max-w-2xl text-xl leading-relaxed text-slate-400">A multiplayer-ready AI gym where autonomous agents explore, compete, adapt, and evolve inside worlds you create.</p><div class="mt-10 flex flex-wrap gap-4"><a href="/auth" class="rounded-xl bg-violet-600 px-7 py-4 font-bold shadow-[0_0_50px_#7c3aed55] transition hover:-translate-y-1 hover:bg-violet-500">Create your first world →</a><a href="#how" class="rounded-xl border border-white/15 px-7 py-4 font-bold text-slate-300 hover:bg-white/5">See the simulation</a></div></div>
+        <div class="pointer-events-none absolute right-0 hidden h-[520px] w-[42%] lg:block"><div class="absolute inset-0 rotate-[-8deg] rounded-[40px] border border-violet-400/20 bg-[#0c1224] shadow-2xl shadow-violet-950"><div class="absolute inset-8 opacity-60" style="background-image: linear-gradient(#7c3aed44 1px, transparent 1px),linear-gradient(90deg,#7c3aed44 1px,transparent 1px);background-size:42px 42px;transform:perspective(500px) rotateX(58deg);"></div>{#each [[25,25,"#7c3aed"],[62,38,"#06b6d4"],[48,70,"#f97316"],[76,68,"#ec4899"]] as orb}<span class="absolute size-8 rounded-full shadow-[0_0_35px_currentColor]" style={`left:${orb[0]}%;top:${orb[1]}%;background:${orb[2]};color:${orb[2]}`}></span>{/each}<div class="absolute bottom-8 left-8 right-8 rounded-2xl border border-white/10 bg-black/50 p-4 backdrop-blur"><div class="flex justify-between text-xs font-bold text-slate-400"><span>GENERATION 12</span><span class="text-emerald-300">4 AGENTS ONLINE</span></div><div class="mt-3 h-2 overflow-hidden rounded-full bg-white/10"><div class="h-full w-3/4 bg-gradient-to-r from-violet-500 to-cyan-400"></div></div></div></div></div>
+      </section>
+      <section id="how" class="border-y border-white/10 bg-white/[0.02] px-6 py-24"><div class="mx-auto max-w-7xl"><p class="text-center text-xs font-bold uppercase tracking-[0.3em] text-violet-400">The experiment loop</p><h2 class="mx-auto mt-4 max-w-3xl text-center text-4xl font-bold sm:text-5xl">No code. No black box. Just intelligence in motion.</h2><div class="mt-16 grid gap-5 md:grid-cols-3">{#each [["01","Design the world","Paint walls, energy, hazards, objectives, and spawn points directly into a live 3D arena."],["02","Give agents a mind","Mix explorers, collectors, survivors, and goal seekers. Inspect every thought and decision."],["03","Run evolution","Replay every tick, breed stronger strategies, publish spectator links, and climb the global leaderboard."]] as feature}<article class="rounded-3xl border border-white/10 bg-white/[0.035] p-7"><span class="text-sm font-black text-cyan-400">{feature[0]}</span><h3 class="mt-8 text-2xl font-bold">{feature[1]}</h3><p class="mt-3 leading-relaxed text-slate-400">{feature[2]}</p></article>{/each}</div></div></section>
+    </main>
+    <footer class="mx-auto flex max-w-7xl flex-col justify-between gap-3 px-6 py-10 text-sm text-slate-600 sm:flex-row"><span>EMERGENCE · Intelligence is better when you can watch it think.</span><span>Built for curious minds.</span></footer>
   </div>
 {/if}
